@@ -6,8 +6,10 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var store = ProjectStore()
+
     var body: some View {
-        BuilderWorkspaceV2()
+        BuilderWorkspaceV2(store: store)
             .frame(minWidth: 1080, minHeight: 700)
     }
 }

@@ -53,16 +53,26 @@ class SimulatorLauncher {
     ) {
         Task { @MainActor in
             do {
-                // Save project first
-                let directory = try ensureExportDirectory()
-                let fileURL = directory.appendingPathComponent(sanitizedProjectFileName(projectName))
-                try ProjectExporter().export(project, to: fileURL)
-                
                 // Get project path
                 guard let projectPath = getProjectPath() else {
                     onError("Could not locate Xcode project. Please ensure you're running from the project directory.")
                     return
                 }
+                
+                // Save project JSON to ~/Documents AND into PreviewRunner source folder
+                let directory = try ensureExportDirectory()
+                let fileURL = directory.appendingPathComponent(sanitizedProjectFileName(projectName))
+                try ProjectExporter().export(project, to: fileURL)
+                
+                // Embed JSON in PreviewRunner's bundle (fileSystemSynchronizedGroups auto-includes it)
+                let previewRunnerDir = (projectPath as NSString).appendingPathComponent("PreviewRunner")
+                let embeddedJSON = (previewRunnerDir as NSString).appendingPathComponent("Prototype.json")
+                try FileManager.default.createDirectory(atPath: previewRunnerDir, withIntermediateDirectories: true)
+                if FileManager.default.fileExists(atPath: embeddedJSON) {
+                    try FileManager.default.removeItem(atPath: embeddedJSON)
+                }
+                try FileManager.default.copyItem(atPath: fileURL.path, toPath: embeddedJSON)
+                print("[Launcher] Embedded JSON at \(embeddedJSON)")
                 
                 // Boot simulator
                 try await bootSimulator(name: simulatorName)
@@ -91,24 +101,14 @@ Tip: Make sure a simulator is running or available in Xcode.
                     try await bootSimulatorDevice(simulatorUDID: simulatorUDID)
                 }
                 
-                // Build
+                // Build (the JSON is now inside PreviewRunner/ so xcodebuild bundles it)
                 onProgress("Building PreviewRunner...")
                 let appPath = try await buildApp(projectPath: projectPath, simulatorUDID: simulatorUDID, simulatorName: actualName ?? simulatorName)
                 
-                // Install
+                // Install & launch
                 onProgress("Installing app...")
                 try await installApp(simulatorUDID: simulatorUDID, appPath: appPath)
                 
-                // Copy JSON file
-                do {
-                    let directory = try ensureExportDirectory()
-                    let jsonFileURL = directory.appendingPathComponent(sanitizedProjectFileName(projectName))
-                    try await copyProjectToSimulator(simulatorUDID: simulatorUDID, jsonFileURL: jsonFileURL)
-                } catch {
-                    print("Warning: Could not copy project file to simulator: \(error.localizedDescription)")
-                }
-                
-                // Launch
                 onProgress("Launching app...")
                 try await launchApp(simulatorUDID: simulatorUDID)
                 
@@ -551,6 +551,14 @@ Tip: Make sure a simulator is running or available in Xcode.
     
     private func buildApp(projectPath: String, simulatorUDID: String, simulatorName: String) async throws -> String {
         let xcodebuildPath = findXcodebuildPath()
+        
+        // Use a dedicated output directory so we never pick up stale artifacts
+        let outputDir = NSTemporaryDirectory() + "AlphaPreviewRunnerBuild"
+        let expectedApp = "\(outputDir)/PreviewRunner.app"
+        
+        // Clean previous build output to guarantee freshness
+        try? FileManager.default.removeItem(atPath: expectedApp)
+        
         let process = Process()
         process.executableURL = URL(fileURLWithPath: xcodebuildPath)
         process.arguments = [
@@ -559,6 +567,7 @@ Tip: Make sure a simulator is running or available in Xcode.
             "-sdk", "iphonesimulator",
             "-destination", "platform=iOS Simulator,id=\(simulatorUDID)",
             "-configuration", "Debug",
+            "CONFIGURATION_BUILD_DIR=\(outputDir)",
             "build"
         ]
         process.currentDirectoryPath = projectPath
@@ -582,61 +591,25 @@ Tip: Make sure a simulator is running or available in Xcode.
             let outputData = pipe.fileHandleForReading.readDataToEndOfFile()
             let errorOutput = String(data: errorData, encoding: .utf8) ?? ""
             let standardOutput = String(data: outputData, encoding: .utf8) ?? ""
-            
-            let hasDVTWarning = errorOutput.contains("DVTDeviceOperation") || standardOutput.contains("DVTDeviceOperation")
             let fullOutput = errorOutput.isEmpty ? standardOutput : errorOutput + "\n\n" + standardOutput
             
+            let hasDVTWarning = errorOutput.contains("DVTDeviceOperation") || standardOutput.contains("DVTDeviceOperation")
             if hasDVTWarning && !fullOutput.contains("error:") && !fullOutput.contains("FAILED") {
-                print("DVTDeviceOperation warning detected, but checking if build succeeded...")
+                print("[Launcher] DVT warning but build may have succeeded, checking...")
             } else {
                 throw LaunchError.buildFailed(fullOutput)
             }
         }
         
-        let fileManager = FileManager.default
-        
-        // Check local build directory first
-        let localBuildPaths = [
-            (projectPath as NSString).appendingPathComponent("build/Debug-iphonesimulator/PreviewRunner.app"),
-            (projectPath as NSString).appendingPathComponent("build/Release-iphonesimulator/PreviewRunner.app"),
-            (projectPath as NSString).appendingPathComponent("build/PreviewRunner.app")
-        ]
-        
-        for appPath in localBuildPaths {
-            if fileManager.fileExists(atPath: appPath) {
-                return appPath
-            }
+        guard FileManager.default.fileExists(atPath: expectedApp) else {
+            throw LaunchError.appNotFound
         }
         
-        // Fallback: DerivedData
-        let homeDir = NSHomeDirectory()
-        let derivedDataBase = (homeDir as NSString).appendingPathComponent("Library/Developer/Xcode/DerivedData")
-        
-        if let derivedDataContents = try? fileManager.contentsOfDirectory(atPath: derivedDataBase) {
-            for folder in derivedDataContents {
-                if folder.contains("PreviewRunner") || folder.contains("alpha") {
-                    let possiblePaths = [
-                        (derivedDataBase as NSString).appendingPathComponent("\(folder)/Build/Products/Debug-iphonesimulator/PreviewRunner.app"),
-                        (derivedDataBase as NSString).appendingPathComponent("\(folder)/Build/Products/Release-iphonesimulator/PreviewRunner.app"),
-                        (derivedDataBase as NSString).appendingPathComponent("\(folder)/Build/Products/PreviewRunner.app")
-                    ]
-                    
-                    for appPath in possiblePaths {
-                        if fileManager.fileExists(atPath: appPath) {
-                            return appPath
-                        }
-                    }
-                    
-                    if let appPath = findAppRecursively(in: (derivedDataBase as NSString).appendingPathComponent(folder)) {
-                        return appPath
-                    }
-                }
-            }
-        }
-        
-        throw LaunchError.appNotFound
+        print("[Launcher] Built app at: \(expectedApp)")
+        return expectedApp
     }
     
+    @available(*, deprecated, message: "No longer used")
     private func findAppRecursively(in directory: String) -> String? {
         let fileManager = FileManager.default
         guard let enumerator = fileManager.enumerator(atPath: directory) else { return nil }
@@ -702,86 +675,96 @@ Tip: Make sure a simulator is running or available in Xcode.
         }
     }
     
+    private func terminateApp(simulatorUDID: String) async throws {
+        let simctlPath = findSimctlPath()
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: simctlPath.executable)
+        process.arguments = simctlPath.arguments + ["terminate", simulatorUDID, bundleID]
+        
+        var environment = ProcessInfo.processInfo.environment
+        if let developerDir = getDeveloperDirectory() {
+            environment["DEVELOPER_DIR"] = developerDir
+        }
+        process.environment = environment
+        
+        process.standardOutput = Pipe()
+        process.standardError = Pipe()
+        
+        try process.run()
+        process.waitUntilExit()
+    }
+    
     private func copyProjectToSimulator(simulatorUDID: String, jsonFileURL: URL) async throws {
         let fileManager = FileManager.default
-        let homeDir = NSHomeDirectory()
-        let simulatorDevicesPath = (homeDir as NSString).appendingPathComponent("Library/Developer/CoreSimulator/Devices/\(simulatorUDID)/data/Containers/Data/Application")
         
-        guard fileManager.fileExists(atPath: simulatorDevicesPath) else {
-            throw LaunchError.launchFailed("Could not find simulator data container directory")
+        // Primary: use simctl get_app_container with "data" to get the data container path
+        var containerPath: String?
+        
+        let simctlPath = findSimctlPath()
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: simctlPath.executable)
+        process.arguments = simctlPath.arguments + ["get_app_container", simulatorUDID, bundleID, "data"]
+        
+        var environment = ProcessInfo.processInfo.environment
+        if let developerDir = getDeveloperDirectory() {
+            environment["DEVELOPER_DIR"] = developerDir
         }
+        process.environment = environment
         
-        guard let appDirs = try? fileManager.contentsOfDirectory(atPath: simulatorDevicesPath) else {
-            throw LaunchError.launchFailed("Could not list application containers")
-        }
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = Pipe()
         
-        var appDataContainer: String?
-        for appDir in appDirs {
-            let appPath = (simulatorDevicesPath as NSString).appendingPathComponent(appDir)
-            let infoPlistPath = (appPath as NSString).appendingPathComponent(".com.apple.mobile_container_manager.metadata.plist")
-            
-            if fileManager.fileExists(atPath: infoPlistPath),
-               let plistData = try? Data(contentsOf: URL(fileURLWithPath: infoPlistPath)),
-               let plist = try? PropertyListSerialization.propertyList(from: plistData, format: nil) as? [String: Any],
-               let identifier = plist["MCMMetadataIdentifier"] as? String,
-               identifier == bundleID {
-                appDataContainer = appPath
-                break
+        try process.run()
+        process.waitUntilExit()
+        
+        if process.terminationStatus == 0 {
+            let outputData = pipe.fileHandleForReading.readDataToEndOfFile()
+            if let path = String(data: outputData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !path.isEmpty, fileManager.fileExists(atPath: path) {
+                containerPath = path
             }
         }
         
-        if appDataContainer == nil {
-            let simctlPath = findSimctlPath()
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: simctlPath.executable)
-            process.arguments = simctlPath.arguments + ["get_app_container", simulatorUDID, bundleID]
+        // Fallback: scan the simulator device directory for the matching bundle ID
+        if containerPath == nil {
+            let homeDir = NSHomeDirectory()
+            let appsPath = (homeDir as NSString).appendingPathComponent(
+                "Library/Developer/CoreSimulator/Devices/\(simulatorUDID)/data/Containers/Data/Application")
             
-            var environment = ProcessInfo.processInfo.environment
-            if let developerDir = getDeveloperDirectory() {
-                environment["DEVELOPER_DIR"] = developerDir
-            }
-            process.environment = environment
-            
-            let pipe = Pipe()
-            process.standardOutput = pipe
-            process.standardError = pipe
-            
-            try process.run()
-            process.waitUntilExit()
-            
-            if process.terminationStatus == 0 {
-                let outputData = pipe.fileHandleForReading.readDataToEndOfFile()
-                if let bundlePath = String(data: outputData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
-                   !bundlePath.isEmpty {
-                    if bundlePath.contains("/Containers/Bundle/Application/") {
-                        let dataPath = bundlePath.replacingOccurrences(of: "/Containers/Bundle/Application/", with: "/Containers/Data/Application/")
-                        if fileManager.fileExists(atPath: dataPath) {
-                            appDataContainer = dataPath
-                        }
+            if let appDirs = try? fileManager.contentsOfDirectory(atPath: appsPath) {
+                for dir in appDirs {
+                    let appPath = (appsPath as NSString).appendingPathComponent(dir)
+                    let metadataPath = (appPath as NSString).appendingPathComponent(
+                        ".com.apple.mobile_container_manager.metadata.plist")
+                    
+                    if fileManager.fileExists(atPath: metadataPath),
+                       let plistData = try? Data(contentsOf: URL(fileURLWithPath: metadataPath)),
+                       let plist = try? PropertyListSerialization.propertyList(from: plistData, format: nil) as? [String: Any],
+                       let identifier = plist["MCMMetadataIdentifier"] as? String,
+                       identifier == bundleID {
+                        containerPath = appPath
+                        break
                     }
                 }
             }
         }
         
-        guard let containerPath = appDataContainer else {
-            throw LaunchError.launchFailed("Could not find app data container. The app may need to be launched first.")
+        guard let container = containerPath else {
+            throw LaunchError.launchFailed(
+                "Could not find PreviewRunner data container on simulator.\n\nTry running PreviewRunner once from Xcode (⌘R with PreviewRunner scheme), then use Run on Simulator again.")
         }
         
-        let documentsPath = (containerPath as NSString).appendingPathComponent("Documents")
-        if !fileManager.fileExists(atPath: documentsPath) {
-            try fileManager.createDirectory(atPath: documentsPath, withIntermediateDirectories: true)
-        }
-        
-        let exportDir = (documentsPath as NSString).appendingPathComponent("SwiftUIBuilderProjects")
+        let exportDir = (container as NSString).appendingPathComponent("Documents/SwiftUIBuilderProjects")
         if !fileManager.fileExists(atPath: exportDir) {
             try fileManager.createDirectory(atPath: exportDir, withIntermediateDirectories: true)
         }
         
-        let destinationURL = URL(fileURLWithPath: (exportDir as NSString).appendingPathComponent(jsonFileURL.lastPathComponent))
-        if fileManager.fileExists(atPath: destinationURL.path) {
-            try fileManager.removeItem(at: destinationURL)
+        let destURL = URL(fileURLWithPath: (exportDir as NSString).appendingPathComponent(jsonFileURL.lastPathComponent))
+        if fileManager.fileExists(atPath: destURL.path) {
+            try fileManager.removeItem(at: destURL)
         }
-        try fileManager.copyItem(at: jsonFileURL, to: destinationURL)
+        try fileManager.copyItem(at: jsonFileURL, to: destURL)
     }
     
     // MARK: - Helper Functions

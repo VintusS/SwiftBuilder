@@ -15,17 +15,18 @@ struct WorkspaceToolbar: View {
     
     let onReset: () -> Void
     let onSave: () -> Void
+    let onExportCode: () -> Void
     let onShowRunGuide: () -> Void
     let onLaunchSimulator: () -> Void
     
     var body: some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("SwiftUI Builder · alpha v2")
+                Text("alpha v2")
                     .font(.system(size: 20, weight: .semibold, design: .rounded))
-                Text("Test a lightweight workflow: add, tweak and preview a single screen.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+//                Text("Test a lightweight workflow: add, tweak and preview a single screen.")
+//                    .font(.callout)
+//                    .foregroundStyle(.secondary)
             }
             
             Spacer(minLength: 24)
@@ -75,7 +76,14 @@ struct WorkspaceToolbar: View {
                 Label("Save Project", systemImage: "square.and.arrow.down")
             }
             .buttonStyle(.borderedProminent)
-            
+
+            Button {
+                onExportCode()
+            } label: {
+                Label("Export Code", systemImage: "chevron.left.forwardslash.chevron.right")
+            }
+            .buttonStyle(.bordered)
+
             Button {
                 onShowRunGuide()
             } label: {

@@ -12,14 +12,28 @@ struct CanvasColumnView: View {
     let zoomLevel: Double
     let blocks: [CanvasBlock]
     let selectedBlockID: CanvasBlock.ID?
+    let screenName: String
     let onSelectBlock: (CanvasBlock.ID) -> Void
     
+    init(theme: WorkspaceTheme, selectedDevice: DevicePreset, appearance: PreviewAppearance,
+         zoomLevel: Double, blocks: [CanvasBlock], selectedBlockID: CanvasBlock.ID?,
+         screenName: String = "Screen", onSelectBlock: @escaping (CanvasBlock.ID) -> Void) {
+        self.theme = theme
+        self.selectedDevice = selectedDevice
+        self.appearance = appearance
+        self.zoomLevel = zoomLevel
+        self.blocks = blocks
+        self.selectedBlockID = selectedBlockID
+        self.screenName = screenName
+        self.onSelectBlock = onSelectBlock
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
-                Label("Screen Preview", systemImage: "iphone")
+                Label(screenName, systemImage: "iphone")
                     .font(.title3.weight(.semibold))
-                Text("Preview updates for \(selectedDevice.displayName) in \(appearance.title.lowercased()) mode.")
+                Text("\(selectedDevice.displayName) \u{00B7} \(appearance.title)")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
