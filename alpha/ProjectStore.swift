@@ -234,6 +234,7 @@ class ProjectStore {
             let directory = try ensureExportDirectory()
             let fileURL = directory.appendingPathComponent(sanitizedProjectFileName())
             try ProjectExporter().export(project, to: fileURL)
+            mirrorToDocuments(fileURL)
             NSWorkspace.shared.activateFileViewerSelecting([fileURL])
             showAlert(
                 title: "Project Saved",
@@ -269,12 +270,14 @@ class ProjectStore {
     }
 
     func showRunGuide() {
+        let saveDir = (getProjectPath() ?? "~") + "/SavedProjects/"
         showAlert(title: "Run on Simulator / Device", message: """
 1. Save your project first using "Save Project" button.
 2. Use "Run on Simulator" to automatically build and launch, or manually:
-   - Open Xcode, select PreviewRunner scheme, choose a simulator, press \u{2318}R
+   - Run ./deploy_preview.sh from Terminal in the project folder
+   - Or open Xcode, select PreviewRunner scheme, choose a simulator, press \u{2318}R
 
-The PreviewRunner app loads the latest project from ~/Documents/SwiftUIBuilderProjects/
+Projects are saved to: \(saveDir)
 """)
     }
 
@@ -326,8 +329,55 @@ Try building manually:
         return sanitized.isEmpty ? "Prototype.json" : "\(sanitized).json"
     }
 
+    func getProjectPath() -> String? {
+        let fileManager = FileManager.default
+        let sourceFile = #file
+        let alphaSubdir = (sourceFile as NSString).deletingLastPathComponent
+        let candidateRoot = (alphaSubdir as NSString).deletingLastPathComponent
+        if fileManager.fileExists(atPath: (candidateRoot as NSString).appendingPathComponent("alpha.xcodeproj")) {
+            return candidateRoot
+        }
+        var searchPath = fileManager.currentDirectoryPath
+        for _ in 0..<10 {
+            let projectPath = (searchPath as NSString).appendingPathComponent("alpha.xcodeproj")
+            if fileManager.fileExists(atPath: projectPath) { return searchPath }
+            let parent = (searchPath as NSString).deletingLastPathComponent
+            if parent == searchPath || parent == "/" { break }
+            searchPath = parent
+        }
+        if let bundlePath = Bundle.main.bundlePath as String? {
+            var checkPath = (bundlePath as NSString).deletingLastPathComponent
+            for _ in 0..<5 {
+                let projectPath = (checkPath as NSString).appendingPathComponent("alpha.xcodeproj")
+                if fileManager.fileExists(atPath: projectPath) { return checkPath }
+                let parent = (checkPath as NSString).deletingLastPathComponent
+                if parent == checkPath || parent == "/" { break }
+                checkPath = parent
+            }
+        }
+        let homeDir = NSHomeDirectory()
+        let commonPaths = [
+            (homeDir as NSString).appendingPathComponent("Desktop/University/Thesis/Old folder Thesis Project/alpha"),
+            homeDir,
+            (homeDir as NSString).appendingPathComponent("Desktop"),
+            (homeDir as NSString).appendingPathComponent("Documents")
+        ]
+        for basePath in commonPaths {
+            let projectPath = (basePath as NSString).appendingPathComponent("alpha.xcodeproj")
+            if fileManager.fileExists(atPath: projectPath) { return basePath }
+        }
+        return nil
+    }
+
 #if os(macOS)
     private func ensureExportDirectory() throws -> URL {
+        if let projectPath = getProjectPath() {
+            let dir = URL(fileURLWithPath: projectPath).appendingPathComponent("SavedProjects", isDirectory: true)
+            if !FileManager.default.fileExists(atPath: dir.path) {
+                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            }
+            return dir
+        }
         guard let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
             throw ExportError.unableToLocateDocumentsDirectory
         }
@@ -336,6 +386,21 @@ Try building manually:
             try FileManager.default.createDirectory(at: exportDirectory, withIntermediateDirectories: true)
         }
         return exportDirectory
+    }
+
+    private func mirrorToDocuments(_ fileURL: URL) {
+        do {
+            guard let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+            let mirrorDir = documents.appendingPathComponent("SwiftUIBuilderProjects", isDirectory: true)
+            if !FileManager.default.fileExists(atPath: mirrorDir.path) {
+                try FileManager.default.createDirectory(at: mirrorDir, withIntermediateDirectories: true)
+            }
+            let dest = mirrorDir.appendingPathComponent(fileURL.lastPathComponent)
+            try? FileManager.default.removeItem(at: dest)
+            try FileManager.default.copyItem(at: fileURL, to: dest)
+        } catch {
+            print("[ProjectStore] Mirror to Documents failed: \(error)")
+        }
     }
 #endif
 }

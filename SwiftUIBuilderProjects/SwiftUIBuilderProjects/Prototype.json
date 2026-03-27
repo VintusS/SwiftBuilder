@@ -2,8 +2,36 @@
   "appearance" : "light",
   "blocks" : [
     {
+      "alignment" : "center",
+      "content" : "",
+      "cornerRadius" : 0,
+      "fillColor" : {
+        "alpha" : 1,
+        "blue" : 0.9599999785423279,
+        "green" : 0.5199999213218689,
+        "red" : 0.44999998807907104
+      },
+      "fontSize" : 0,
+      "fontWeight" : "regular",
+      "horizontalPadding" : 0,
+      "kind" : "symbol",
+      "listItems" : [
+
+      ],
+      "spacingBefore" : 0,
+      "symbolName" : "iphone",
+      "symbolScale" : 1.1,
+      "textColor" : {
+        "alpha" : 0.8470588326454163,
+        "blue" : 1,
+        "green" : 1,
+        "red" : 1
+      },
+      "verticalPadding" : 0
+    },
+    {
       "alignment" : "leading",
-      "content" : "Design onboarding screens in minutes",
+      "content" : "ranodmafa",
       "cornerRadius" : 0,
       "fillColor" : {
         "alpha" : 0,
@@ -59,7 +87,7 @@
     },
     {
       "alignment" : "center",
-      "content" : "Preview coma",
+      "content" : "Preview Prototype",
       "cornerRadius" : 18,
       "fillColor" : {
         "alpha" : 1,
@@ -74,7 +102,7 @@
       "listItems" : [
 
       ],
-      "navigationTarget" : "20D8B940-E30D-45BB-9508-DC2303D49D20",
+      "navigationTarget" : "3931B0E8-1D3C-47A6-A952-6ACD16DF84F7",
       "spacingBefore" : 18,
       "symbolName" : "",
       "symbolScale" : 1,
@@ -88,14 +116,42 @@
     }
   ],
   "device" : "iphone15Pro",
-  "exportedAt" : "2026-03-27T14:35:08Z",
-  "name" : "rnadoamfadf",
+  "exportedAt" : "2026-03-27T13:07:48Z",
+  "name" : "Prototype",
   "screens" : [
     {
       "blocks" : [
         {
+          "alignment" : "center",
+          "content" : "",
+          "cornerRadius" : 0,
+          "fillColor" : {
+            "alpha" : 1,
+            "blue" : 0.9599999785423279,
+            "green" : 0.5199999213218689,
+            "red" : 0.44999998807907104
+          },
+          "fontSize" : 0,
+          "fontWeight" : "regular",
+          "horizontalPadding" : 0,
+          "kind" : "symbol",
+          "listItems" : [
+
+          ],
+          "spacingBefore" : 0,
+          "symbolName" : "iphone",
+          "symbolScale" : 1.1,
+          "textColor" : {
+            "alpha" : 0.8470588326454163,
+            "blue" : 1,
+            "green" : 1,
+            "red" : 1
+          },
+          "verticalPadding" : 0
+        },
+        {
           "alignment" : "leading",
-          "content" : "Design onboarding screens in minutes",
+          "content" : "ranodmafa",
           "cornerRadius" : 0,
           "fillColor" : {
             "alpha" : 0,
@@ -151,7 +207,7 @@
         },
         {
           "alignment" : "center",
-          "content" : "Preview coma",
+          "content" : "Preview Prototype",
           "cornerRadius" : 18,
           "fillColor" : {
             "alpha" : 1,
@@ -166,7 +222,7 @@
           "listItems" : [
 
           ],
-          "navigationTarget" : "20D8B940-E30D-45BB-9508-DC2303D49D20",
+          "navigationTarget" : "3931B0E8-1D3C-47A6-A952-6ACD16DF84F7",
           "spacingBefore" : 18,
           "symbolName" : "",
           "symbolScale" : 1,
@@ -179,53 +235,53 @@
           "verticalPadding" : 14
         }
       ],
-      "id" : "F4F756DA-A52E-45E7-9243-CD59243BABE7",
+      "id" : "802AEAE5-10FF-446E-9DC4-6088EC294710",
       "name" : "Screen 1"
     },
     {
       "blocks" : [
         {
           "alignment" : "leading",
-          "content" : "Design onboarding screens in minutes",
-          "cornerRadius" : 0,
+          "content" : "New",
+          "cornerRadius" : 12,
           "fillColor" : {
-            "alpha" : 0,
-            "blue" : 0,
-            "green" : 0,
-            "red" : 0
+            "alpha" : 1,
+            "blue" : 0.42000001668930054,
+            "green" : 0.36000001430511475,
+            "red" : 0.9599999785423279
           },
-          "fontSize" : 32,
-          "fontWeight" : "bold",
-          "horizontalPadding" : 0,
-          "kind" : "heroTitle",
+          "fontSize" : 13,
+          "fontWeight" : "semibold",
+          "horizontalPadding" : 10,
+          "kind" : "badge",
           "listItems" : [
 
           ],
-          "spacingBefore" : 18,
+          "spacingBefore" : 8,
           "symbolName" : "",
           "symbolScale" : 1,
           "textColor" : {
             "alpha" : 1,
-            "blue" : 0.2799999713897705,
-            "green" : 0.17000001668930054,
-            "red" : 0.15000002086162567
+            "blue" : 1,
+            "green" : 1,
+            "red" : 1
           },
-          "verticalPadding" : 0
+          "verticalPadding" : 4
         },
         {
           "alignment" : "leading",
-          "content" : "Compose flows visually, then preview them instantly on real device frames.",
-          "cornerRadius" : 0,
+          "content" : "Enter text...",
+          "cornerRadius" : 10,
           "fillColor" : {
-            "alpha" : 0,
-            "blue" : 0,
-            "green" : 0,
-            "red" : 0
+            "alpha" : 1,
+            "blue" : 0.9699999690055847,
+            "green" : 0.949999988079071,
+            "red" : 0.949999988079071
           },
-          "fontSize" : 18,
+          "fontSize" : 16,
           "fontWeight" : "regular",
-          "horizontalPadding" : 0,
-          "kind" : "bodyText",
+          "horizontalPadding" : 14,
+          "kind" : "textField",
           "listItems" : [
 
           ],
@@ -234,42 +290,42 @@
           "symbolScale" : 1,
           "textColor" : {
             "alpha" : 1,
-            "blue" : 0.48000001907348633,
-            "green" : 0.3799999952316284,
-            "red" : 0.32999998331069946
+            "blue" : 0.6399999856948853,
+            "green" : 0.6000000238418579,
+            "red" : 0.6000000238418579
           },
-          "verticalPadding" : 0
+          "verticalPadding" : 12
         },
         {
           "alignment" : "leading",
-          "content" : "Design onboarding screens in minutes",
-          "cornerRadius" : 0,
+          "content" : "Search...",
+          "cornerRadius" : 10,
           "fillColor" : {
-            "alpha" : 0,
-            "blue" : 0,
-            "green" : 0,
-            "red" : 0
+            "alpha" : 1,
+            "blue" : 0.9699999690055847,
+            "green" : 0.949999988079071,
+            "red" : 0.949999988079071
           },
-          "fontSize" : 32,
-          "fontWeight" : "bold",
-          "horizontalPadding" : 0,
-          "kind" : "heroTitle",
+          "fontSize" : 16,
+          "fontWeight" : "regular",
+          "horizontalPadding" : 12,
+          "kind" : "searchBar",
           "listItems" : [
 
           ],
-          "spacingBefore" : 18,
-          "symbolName" : "",
+          "spacingBefore" : 12,
+          "symbolName" : "magnifyingglass",
           "symbolScale" : 1,
           "textColor" : {
             "alpha" : 1,
-            "blue" : 0.2799999713897705,
-            "green" : 0.17000001668930054,
-            "red" : 0.15000002086162567
+            "blue" : 0.6399999856948853,
+            "green" : 0.6000000238418579,
+            "red" : 0.6000000238418579
           },
-          "verticalPadding" : 0
+          "verticalPadding" : 10
         }
       ],
-      "id" : "20D8B940-E30D-45BB-9508-DC2303D49D20",
+      "id" : "3931B0E8-1D3C-47A6-A952-6ACD16DF84F7",
       "name" : "Screen 2"
     }
   ]

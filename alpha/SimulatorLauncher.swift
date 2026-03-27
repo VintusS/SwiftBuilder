@@ -47,24 +47,39 @@ class SimulatorLauncher {
         project: BuilderProject,
         projectName: String,
         simulatorName: String,
-        onProgress: @escaping (String) -> Void,
-        onSuccess: @escaping (String) -> Void,
-        onError: @escaping (String) -> Void
+        onProgress: @escaping @Sendable (String) -> Void,
+        onSuccess: @escaping @Sendable (String) -> Void,
+        onError: @escaping @Sendable (String) -> Void
     ) {
-        Task { @MainActor in
+        // Run everything off the main thread so the UI stays responsive
+        Task.detached { [self] in
             do {
-                // Get project path
-                guard let projectPath = getProjectPath() else {
-                    onError("Could not locate Xcode project. Please ensure you're running from the project directory.")
+                guard let projectPath = self.getProjectPath() else {
+                    await MainActor.run { onError("Could not locate Xcode project.") }
                     return
                 }
                 
-                // Save project JSON to ~/Documents AND into PreviewRunner source folder
-                let directory = try ensureExportDirectory()
-                let fileURL = directory.appendingPathComponent(sanitizedProjectFileName(projectName))
+                // Save project JSON to <projectPath>/SavedProjects/
+                let savedProjectsDir = URL(fileURLWithPath: (projectPath as NSString).appendingPathComponent("SavedProjects"))
+                if !FileManager.default.fileExists(atPath: savedProjectsDir.path) {
+                    try FileManager.default.createDirectory(at: savedProjectsDir, withIntermediateDirectories: true)
+                }
+                let fileURL = savedProjectsDir.appendingPathComponent(self.sanitizedProjectFileName(projectName))
                 try ProjectExporter().export(project, to: fileURL)
+                print("[Launcher] Saved JSON to \(fileURL.path)")
                 
-                // Embed JSON in PreviewRunner's bundle (fileSystemSynchronizedGroups auto-includes it)
+                // Mirror to ~/Documents so PreviewRunner can read via SIMULATOR_HOST_HOME
+                if let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                    let mirrorDir = documents.appendingPathComponent("SwiftUIBuilderProjects", isDirectory: true)
+                    if !FileManager.default.fileExists(atPath: mirrorDir.path) {
+                        try? FileManager.default.createDirectory(at: mirrorDir, withIntermediateDirectories: true)
+                    }
+                    let mirrorURL = mirrorDir.appendingPathComponent(fileURL.lastPathComponent)
+                    try? FileManager.default.removeItem(at: mirrorURL)
+                    try? FileManager.default.copyItem(at: fileURL, to: mirrorURL)
+                }
+                
+                // Embed JSON in PreviewRunner's bundle
                 let previewRunnerDir = (projectPath as NSString).appendingPathComponent("PreviewRunner")
                 let embeddedJSON = (previewRunnerDir as NSString).appendingPathComponent("Prototype.json")
                 try FileManager.default.createDirectory(atPath: previewRunnerDir, withIntermediateDirectories: true)
@@ -75,47 +90,44 @@ class SimulatorLauncher {
                 print("[Launcher] Embedded JSON at \(embeddedJSON)")
                 
                 // Boot simulator
-                try await bootSimulator(name: simulatorName)
+                try await self.bootSimulator(name: simulatorName)
                 
                 // Find simulator
-                let (udid, actualName) = try await findSimulator(preferredName: simulatorName)
+                let (udid, actualName) = try await self.findSimulator(preferredName: simulatorName)
                 
                 guard let simulatorUDID = udid else {
-                    let availableSimulators = try await getAllAvailableSimulators()
+                    let availableSimulators = try await self.getAllAvailableSimulators()
                     let simulatorList = availableSimulators.isEmpty
                         ? "No simulators found."
                         : "Available simulators:\n" + availableSimulators.joined(separator: "\n")
                     
-                    throw LaunchError.simulatorNotFound("""
-\(simulatorName) not found.
-
-\(simulatorList)
-
-Tip: Make sure a simulator is running or available in Xcode.
-""")
+                    await MainActor.run {
+                        onError("\(simulatorName) not found.\n\n\(simulatorList)\n\nTip: Make sure a simulator is running or available in Xcode.")
+                    }
+                    return
                 }
                 
                 // Boot if needed
-                let isAlreadyBooted = try await isSimulatorBooted(udid: simulatorUDID)
+                let isAlreadyBooted = try await self.isSimulatorBooted(udid: simulatorUDID)
                 if !isAlreadyBooted {
-                    try await bootSimulatorDevice(simulatorUDID: simulatorUDID)
+                    try await self.bootSimulatorDevice(simulatorUDID: simulatorUDID)
                 }
                 
-                // Build (the JSON is now inside PreviewRunner/ so xcodebuild bundles it)
-                onProgress("Building PreviewRunner...")
-                let appPath = try await buildApp(projectPath: projectPath, simulatorUDID: simulatorUDID, simulatorName: actualName ?? simulatorName)
+                await MainActor.run { onProgress("Building PreviewRunner...") }
+                let appPath = try await self.buildApp(projectPath: projectPath, simulatorUDID: simulatorUDID, simulatorName: actualName ?? simulatorName)
                 
-                // Install & launch
-                onProgress("Installing app...")
-                try await installApp(simulatorUDID: simulatorUDID, appPath: appPath)
+                await MainActor.run { onProgress("Installing app...") }
+                try await self.installApp(simulatorUDID: simulatorUDID, appPath: appPath)
                 
-                onProgress("Launching app...")
-                try await launchApp(simulatorUDID: simulatorUDID)
+                await MainActor.run { onProgress("Launching app...") }
+                let savedDir = (projectPath as NSString).appendingPathComponent("SavedProjects")
+                try await self.launchApp(simulatorUDID: simulatorUDID, savedProjectsPath: savedDir)
                 
                 let displayName = actualName ?? simulatorName
-                onSuccess("PreviewRunner is launching on \(displayName) simulator!")
+                await MainActor.run { onSuccess("PreviewRunner is launching on \(displayName) simulator!") }
             } catch {
-                onError(error.localizedDescription)
+                let msg = error.localizedDescription
+                await MainActor.run { onError(msg) }
             }
         }
     }
@@ -124,6 +136,14 @@ Tip: Make sure a simulator is running or available in Xcode.
     
     private func getProjectPath() -> String? {
         let fileManager = FileManager.default
+        
+        // Strategy 0: Use compile-time source file path (most reliable)
+        let sourceFile = #file
+        let alphaSubdir = (sourceFile as NSString).deletingLastPathComponent
+        let candidateRoot = (alphaSubdir as NSString).deletingLastPathComponent
+        if fileManager.fileExists(atPath: (candidateRoot as NSString).appendingPathComponent("alpha.xcodeproj")) {
+            return candidateRoot
+        }
         
         // Strategy 1: Check current working directory
         var searchPath = fileManager.currentDirectoryPath
@@ -154,10 +174,10 @@ Tip: Make sure a simulator is running or available in Xcode.
         // Strategy 3: Check common locations
         let homeDir = NSHomeDirectory()
         let commonPaths = [
+            (homeDir as NSString).appendingPathComponent("Desktop/University/Thesis/Old folder Thesis Project/alpha"),
             homeDir,
             (homeDir as NSString).appendingPathComponent("Desktop"),
-            (homeDir as NSString).appendingPathComponent("Documents"),
-            "/Users/\(NSUserName())/Desktop/Thesis Project/alpha"
+            (homeDir as NSString).appendingPathComponent("Documents")
         ]
         
         for basePath in commonPaths {
@@ -550,55 +570,54 @@ Tip: Make sure a simulator is running or available in Xcode.
     // MARK: - Build & Install
     
     private func buildApp(projectPath: String, simulatorUDID: String, simulatorName: String) async throws -> String {
-        let xcodebuildPath = findXcodebuildPath()
-        
-        // Use a dedicated output directory so we never pick up stale artifacts
         let outputDir = NSTemporaryDirectory() + "AlphaPreviewRunnerBuild"
         let expectedApp = "\(outputDir)/PreviewRunner.app"
+        let logFile = NSTemporaryDirectory() + "AlphaPreviewRunnerBuild.log"
+        let developerDir = getDeveloperDirectory() ?? "/Applications/Xcode.app/Contents/Developer"
+        let xcodebuildPath = findXcodebuildPath()
         
-        // Clean previous build output to guarantee freshness
-        try? FileManager.default.removeItem(atPath: expectedApp)
+        let scriptPath = (projectPath as NSString).appendingPathComponent("_build_preview.sh")
+        let script = """
+        #!/bin/bash
+        export DEVELOPER_DIR="\(developerDir)"
+        OUTPUT_DIR="\(outputDir)"
+        rm -rf "$OUTPUT_DIR"
+        mkdir -p "$OUTPUT_DIR"
+        "\(xcodebuildPath)" \
+            -project "\(projectPath)/alpha.xcodeproj" \
+            -target PreviewRunner \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            "CONFIGURATION_BUILD_DIR=$OUTPUT_DIR" \
+            "OBJROOT=$OUTPUT_DIR/Intermediates" \
+            "SYMROOT=$OUTPUT_DIR/Products" \
+            clean build > "\(logFile)" 2>&1
+        if [ -d "$OUTPUT_DIR/PreviewRunner.app" ]; then
+            exit 0
+        else
+            exit 1
+        fi
+        """
+        
+        try script.write(toFile: scriptPath, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptPath)
         
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: xcodebuildPath)
-        process.arguments = [
-            "-project", "\(projectPath)/alpha.xcodeproj",
-            "-target", "PreviewRunner",
-            "-sdk", "iphonesimulator",
-            "-destination", "platform=iOS Simulator,id=\(simulatorUDID)",
-            "-configuration", "Debug",
-            "CONFIGURATION_BUILD_DIR=\(outputDir)",
-            "build"
-        ]
+        process.executableURL = URL(fileURLWithPath: "/bin/bash")
+        process.arguments = [scriptPath]
         process.currentDirectoryPath = projectPath
-        
-        var environment = ProcessInfo.processInfo.environment
-        if let developerDir = getDeveloperDirectory() {
-            environment["DEVELOPER_DIR"] = developerDir
-        }
-        process.environment = environment
-        
-        let pipe = Pipe()
-        let errorPipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = errorPipe
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
         
         try process.run()
         process.waitUntilExit()
         
+        try? FileManager.default.removeItem(atPath: scriptPath)
+        
         if process.terminationStatus != 0 {
-            let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
-            let outputData = pipe.fileHandleForReading.readDataToEndOfFile()
-            let errorOutput = String(data: errorData, encoding: .utf8) ?? ""
-            let standardOutput = String(data: outputData, encoding: .utf8) ?? ""
-            let fullOutput = errorOutput.isEmpty ? standardOutput : errorOutput + "\n\n" + standardOutput
-            
-            let hasDVTWarning = errorOutput.contains("DVTDeviceOperation") || standardOutput.contains("DVTDeviceOperation")
-            if hasDVTWarning && !fullOutput.contains("error:") && !fullOutput.contains("FAILED") {
-                print("[Launcher] DVT warning but build may have succeeded, checking...")
-            } else {
-                throw LaunchError.buildFailed(fullOutput)
-            }
+            let log = (try? String(contentsOfFile: logFile, encoding: .utf8)) ?? "Build failed (no log)"
+            let tail = log.suffix(2000)
+            throw LaunchError.buildFailed(String(tail))
         }
         
         guard FileManager.default.fileExists(atPath: expectedApp) else {
@@ -609,69 +628,60 @@ Tip: Make sure a simulator is running or available in Xcode.
         return expectedApp
     }
     
-    @available(*, deprecated, message: "No longer used")
-    private func findAppRecursively(in directory: String) -> String? {
-        let fileManager = FileManager.default
-        guard let enumerator = fileManager.enumerator(atPath: directory) else { return nil }
+    private func runProcess(executable: String, arguments: [String], environment: [String: String]? = nil) throws -> (status: Int32, output: String) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = arguments
+        if let env = environment { process.environment = env }
         
-        for case let path as String in enumerator {
-            if path.hasSuffix("PreviewRunner.app") {
-                return (directory as NSString).appendingPathComponent(path)
-            }
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+        
+        var outputData = Data()
+        pipe.fileHandleForReading.readabilityHandler = { handle in
+            outputData.append(handle.availableData)
         }
         
-        return nil
+        try process.run()
+        process.waitUntilExit()
+        pipe.fileHandleForReading.readabilityHandler = nil
+        outputData.append(pipe.fileHandleForReading.readDataToEndOfFile())
+        
+        let output = String(data: outputData, encoding: .utf8) ?? ""
+        return (process.terminationStatus, output)
     }
     
     private func installApp(simulatorUDID: String, appPath: String) async throws {
         let simctlPath = findSimctlPath()
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: simctlPath.executable)
-        process.arguments = simctlPath.arguments + ["install", simulatorUDID, appPath]
+        var env = ProcessInfo.processInfo.environment
+        if let dev = getDeveloperDirectory() { env["DEVELOPER_DIR"] = dev }
         
-        var environment = ProcessInfo.processInfo.environment
-        if let developerDir = getDeveloperDirectory() {
-            environment["DEVELOPER_DIR"] = developerDir
-        }
-        process.environment = environment
-        
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-        
-        try process.run()
-        process.waitUntilExit()
-        
-        if process.terminationStatus != 0 {
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            let output = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw LaunchError.installFailed(output)
+        let result = try runProcess(
+            executable: simctlPath.executable,
+            arguments: simctlPath.arguments + ["install", simulatorUDID, appPath],
+            environment: env
+        )
+        if result.status != 0 {
+            throw LaunchError.installFailed(result.output)
         }
     }
     
-    private func launchApp(simulatorUDID: String) async throws {
+    private func launchApp(simulatorUDID: String, savedProjectsPath: String? = nil) async throws {
         let simctlPath = findSimctlPath()
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: simctlPath.executable)
-        process.arguments = simctlPath.arguments + ["launch", simulatorUDID, bundleID]
-        
-        var environment = ProcessInfo.processInfo.environment
-        if let developerDir = getDeveloperDirectory() {
-            environment["DEVELOPER_DIR"] = developerDir
+        var env = ProcessInfo.processInfo.environment
+        if let dev = getDeveloperDirectory() { env["DEVELOPER_DIR"] = dev }
+        if let savedPath = savedProjectsPath {
+            env["SIMCTL_CHILD_ALPHA_PROJECT_DIR"] = savedPath
         }
-        process.environment = environment
         
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-        
-        try process.run()
-        process.waitUntilExit()
-        
-        if process.terminationStatus != 0 {
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            let output = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw LaunchError.launchFailed(output)
+        let result = try runProcess(
+            executable: simctlPath.executable,
+            arguments: simctlPath.arguments + ["launch", simulatorUDID, bundleID],
+            environment: env
+        )
+        if result.status != 0 {
+            throw LaunchError.launchFailed(result.output)
         }
     }
     
@@ -844,17 +854,6 @@ Tip: Make sure a simulator is running or available in Xcode.
         return sanitized.isEmpty ? "Prototype.json" : "\(sanitized).json"
     }
     
-#if os(macOS)
-    private func ensureExportDirectory() throws -> URL {
-        guard let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            throw ExportError.unableToLocateDocumentsDirectory
-        }
-        let exportDirectory = documents.appendingPathComponent("SwiftUIBuilderProjects", isDirectory: true)
-        if !FileManager.default.fileExists(atPath: exportDirectory.path) {
-            try FileManager.default.createDirectory(at: exportDirectory, withIntermediateDirectories: true)
-        }
-        return exportDirectory
-    }
-#endif
+    // ensureExportDirectory removed — launch() now saves directly to <projectPath>/SavedProjects/
 }
 

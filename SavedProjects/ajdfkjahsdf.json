@@ -2,6 +2,34 @@
   "appearance" : "light",
   "blocks" : [
     {
+      "alignment" : "center",
+      "content" : "",
+      "cornerRadius" : 0,
+      "fillColor" : {
+        "alpha" : 1,
+        "blue" : 0.9599999785423279,
+        "green" : 0.5199999213218689,
+        "red" : 0.44999998807907104
+      },
+      "fontSize" : 0,
+      "fontWeight" : "regular",
+      "horizontalPadding" : 0,
+      "kind" : "symbol",
+      "listItems" : [
+
+      ],
+      "spacingBefore" : 0,
+      "symbolName" : "iphone",
+      "symbolScale" : 1.1,
+      "textColor" : {
+        "alpha" : 0.8470588326454163,
+        "blue" : 1,
+        "green" : 1,
+        "red" : 1
+      },
+      "verticalPadding" : 0
+    },
+    {
       "alignment" : "leading",
       "content" : "Design onboarding screens in minutes",
       "cornerRadius" : 0,
@@ -59,7 +87,7 @@
     },
     {
       "alignment" : "center",
-      "content" : "Preview coma",
+      "content" : "akjsdfnaks",
       "cornerRadius" : 18,
       "fillColor" : {
         "alpha" : 1,
@@ -74,7 +102,7 @@
       "listItems" : [
 
       ],
-      "navigationTarget" : "20D8B940-E30D-45BB-9508-DC2303D49D20",
+      "navigationTarget" : "76BD555B-726E-4FA2-A318-3DCFFD1AAA8C",
       "spacingBefore" : 18,
       "symbolName" : "",
       "symbolScale" : 1,
@@ -88,11 +116,39 @@
     }
   ],
   "device" : "iphone15Pro",
-  "exportedAt" : "2026-03-27T14:35:08Z",
-  "name" : "rnadoamfadf",
+  "exportedAt" : "2026-03-27T14:05:24Z",
+  "name" : "ajdfkjahsdf",
   "screens" : [
     {
       "blocks" : [
+        {
+          "alignment" : "center",
+          "content" : "",
+          "cornerRadius" : 0,
+          "fillColor" : {
+            "alpha" : 1,
+            "blue" : 0.9599999785423279,
+            "green" : 0.5199999213218689,
+            "red" : 0.44999998807907104
+          },
+          "fontSize" : 0,
+          "fontWeight" : "regular",
+          "horizontalPadding" : 0,
+          "kind" : "symbol",
+          "listItems" : [
+
+          ],
+          "spacingBefore" : 0,
+          "symbolName" : "iphone",
+          "symbolScale" : 1.1,
+          "textColor" : {
+            "alpha" : 0.8470588326454163,
+            "blue" : 1,
+            "green" : 1,
+            "red" : 1
+          },
+          "verticalPadding" : 0
+        },
         {
           "alignment" : "leading",
           "content" : "Design onboarding screens in minutes",
@@ -151,7 +207,7 @@
         },
         {
           "alignment" : "center",
-          "content" : "Preview coma",
+          "content" : "akjsdfnaks",
           "cornerRadius" : 18,
           "fillColor" : {
             "alpha" : 1,
@@ -166,7 +222,7 @@
           "listItems" : [
 
           ],
-          "navigationTarget" : "20D8B940-E30D-45BB-9508-DC2303D49D20",
+          "navigationTarget" : "76BD555B-726E-4FA2-A318-3DCFFD1AAA8C",
           "spacingBefore" : 18,
           "symbolName" : "",
           "symbolScale" : 1,
@@ -179,7 +235,7 @@
           "verticalPadding" : 14
         }
       ],
-      "id" : "F4F756DA-A52E-45E7-9243-CD59243BABE7",
+      "id" : "C7D7CD83-5D8E-4CAD-8B0E-7924408E9CE6",
       "name" : "Screen 1"
     },
     {
@@ -239,37 +295,9 @@
             "red" : 0.32999998331069946
           },
           "verticalPadding" : 0
-        },
-        {
-          "alignment" : "leading",
-          "content" : "Design onboarding screens in minutes",
-          "cornerRadius" : 0,
-          "fillColor" : {
-            "alpha" : 0,
-            "blue" : 0,
-            "green" : 0,
-            "red" : 0
-          },
-          "fontSize" : 32,
-          "fontWeight" : "bold",
-          "horizontalPadding" : 0,
-          "kind" : "heroTitle",
-          "listItems" : [
-
-          ],
-          "spacingBefore" : 18,
-          "symbolName" : "",
-          "symbolScale" : 1,
-          "textColor" : {
-            "alpha" : 1,
-            "blue" : 0.2799999713897705,
-            "green" : 0.17000001668930054,
-            "red" : 0.15000002086162567
-          },
-          "verticalPadding" : 0
         }
       ],
-      "id" : "20D8B940-E30D-45BB-9508-DC2303D49D20",
+      "id" : "76BD555B-726E-4FA2-A318-3DCFFD1AAA8C",
       "name" : "Screen 2"
     }
   ]

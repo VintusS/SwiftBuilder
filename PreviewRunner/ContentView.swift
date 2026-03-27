@@ -228,7 +228,16 @@ struct ScreenContentView: View {
 
 struct ProjectLoader {
     static func loadLatestWithSource() throws -> (BuilderProject, String) {
-        // 1. Host macOS Documents — always has the latest export from the builder
+        // 1. Direct project path passed via SIMCTL_CHILD env var (highest priority)
+        if let projectDir = ProcessInfo.processInfo.environment["ALPHA_PROJECT_DIR"] {
+            let dir = URL(fileURLWithPath: projectDir)
+            print("[PreviewRunner] Checking ALPHA_PROJECT_DIR: \(dir.path)")
+            if let (project, file) = try? loadLatestFromDirectory(dir) {
+                return (project, "PROJECT_DIR: \(file)")
+            }
+        }
+
+        // 2. Host macOS Documents — has the mirrored export from the builder
         if let hostHome = ProcessInfo.processInfo.environment["SIMULATOR_HOST_HOME"] {
             let hostDir = URL(fileURLWithPath: hostHome).appendingPathComponent("Documents/SwiftUIBuilderProjects")
             print("[PreviewRunner] Checking host docs: \(hostDir.path)")
@@ -239,7 +248,7 @@ struct ProjectLoader {
             print("[PreviewRunner] SIMULATOR_HOST_HOME not available")
         }
 
-        // 2. App sandboxed Documents (copied by SimulatorLauncher)
+        // 3. App sandboxed Documents (copied by SimulatorLauncher)
         if let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
             let appDir = docsURL.appendingPathComponent("SwiftUIBuilderProjects", isDirectory: true)
             print("[PreviewRunner] Checking app docs: \(appDir.path)")
@@ -248,7 +257,7 @@ struct ProjectLoader {
             }
         }
 
-        // 3. Bundle resource (fallback, may be stale from last build)
+        // 4. Bundle resource (fallback, may be stale from last build)
         if let bundleURL = Bundle.main.url(forResource: "Prototype", withExtension: "json") {
             print("[PreviewRunner] Falling back to bundle: \(bundleURL.path)")
             let project = try loadProject(from: bundleURL)
