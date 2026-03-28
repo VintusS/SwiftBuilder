@@ -235,11 +235,6 @@ class ProjectStore {
             let fileURL = directory.appendingPathComponent(sanitizedProjectFileName())
             try ProjectExporter().export(project, to: fileURL)
             mirrorToDocuments(fileURL)
-            NSWorkspace.shared.activateFileViewerSelecting([fileURL])
-            showAlert(
-                title: "Project Saved",
-                message: "Saved to \(fileURL.path).\n\nFinder opened the export location."
-            )
         } catch {
             showAlert(title: "Save Failed", message: error.localizedDescription)
         }
@@ -290,9 +285,8 @@ Projects are saved to: \(saveDir)
             projectName: projectName,
             simulatorName: selectedDevice.displayName,
             onProgress: { _ in },
-            onSuccess: { [weak self] message in
+            onSuccess: { [weak self] _ in
                 self?.isBuilding = false
-                self?.showAlert(title: "Success", message: message)
             },
             onError: { [weak self] errorMessage in
                 self?.isBuilding = false

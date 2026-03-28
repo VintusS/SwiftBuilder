@@ -14,7 +14,7 @@ struct ContentView: View {
     @State private var isLoading = true
     @State private var alertMessage: String?
     @State private var debugLog: String = ""
-    @State private var showDebug = false
+    @State private var showDebug = false // shake device to toggle
 
     private var appearance: PreviewAppearance {
         PreviewAppearance(rawValue: project?.appearance ?? "light") ?? .light
@@ -147,14 +147,12 @@ struct ContentView: View {
                     self.project = loadedProject
                     self.screens = loadedScreens
                     self.isLoading = false
-                    self.showDebug = true
                 }
             } catch {
                 DispatchQueue.main.async {
                     self.debugLog = "ERROR: \(error.localizedDescription)"
                     self.errorMessage = error.localizedDescription
                     self.isLoading = false
-                    self.showDebug = true
                 }
             }
         }
@@ -184,8 +182,7 @@ struct ScreenContentView: View {
             }
         }
         .preferredColorScheme(appearance.colorScheme)
-        .navigationTitle(screen.name)
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     @ViewBuilder
