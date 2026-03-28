@@ -158,6 +158,10 @@ struct CanvasBlock: Identifiable {
     var symbolScale: Double
     var listItems: [String]
     var navigationTarget: UUID?
+    var opacity: Double = 1.0
+    var borderWidth: Double = 0
+    var lineSpacing: Double = 4
+    var shadowRadius: Double = 0
 
     var outlineSummary: String {
         switch kind {
@@ -218,7 +222,7 @@ struct CanvasBlock: Identifiable {
                 symbolName: "iphone",
                 alignment: .center,
                 fontSize: 0,
-                fontWeight: .regular,
+                fontWeight: .light,
                 textColor: .primary,
                 fillColor: Color(red: 0.45, green: 0.52, blue: 0.96),
                 spacingBefore: 0,
@@ -344,7 +348,7 @@ struct CanvasBlock: Identifiable {
         case .image:
             return CanvasBlock(
                 kind: .image, content: "", symbolName: "photo.fill", alignment: .center,
-                fontSize: 0, fontWeight: .regular, textColor: .secondary,
+                fontSize: 0, fontWeight: .light, textColor: .secondary,
                 fillColor: Color(red: 0.92, green: 0.93, blue: 0.95),
                 spacingBefore: 12, horizontalPadding: 0, verticalPadding: 0,
                 cornerRadius: 12, symbolScale: 0.8, listItems: []
@@ -470,6 +474,8 @@ enum BlockAlignment: String, CaseIterable, Identifiable {
 }
 
 enum FontWeightOption: String, CaseIterable, Identifiable {
+    case thin
+    case light
     case regular
     case medium
     case semibold
@@ -483,6 +489,8 @@ enum FontWeightOption: String, CaseIterable, Identifiable {
 
     var weight: Font.Weight {
         switch self {
+        case .thin: return .thin
+        case .light: return .light
         case .regular: return .regular
         case .medium: return .medium
         case .semibold: return .semibold
@@ -614,6 +622,10 @@ struct ExportedBlock: Codable {
     var symbolScale: Double
     var listItems: [String]
     var navigationTarget: String?
+    var opacity: Double?
+    var borderWidth: Double?
+    var lineSpacing: Double?
+    var shadowRadius: Double?
 }
 
 struct ColorComponents: Codable {
@@ -666,7 +678,11 @@ extension CanvasBlock {
             cornerRadius: cornerRadius,
             symbolScale: symbolScale,
             listItems: listItems,
-            navigationTarget: navigationTarget?.uuidString
+            navigationTarget: navigationTarget?.uuidString,
+            opacity: opacity,
+            borderWidth: borderWidth,
+            lineSpacing: lineSpacing,
+            shadowRadius: shadowRadius
         )
     }
 }
@@ -693,7 +709,11 @@ extension CanvasBlock {
             cornerRadius: exported.cornerRadius,
             symbolScale: exported.symbolScale,
             listItems: exported.listItems,
-            navigationTarget: navTarget
+            navigationTarget: navTarget,
+            opacity: exported.opacity ?? 1.0,
+            borderWidth: exported.borderWidth ?? 0,
+            lineSpacing: exported.lineSpacing ?? 4,
+            shadowRadius: exported.shadowRadius ?? 0
         )
     }
 }

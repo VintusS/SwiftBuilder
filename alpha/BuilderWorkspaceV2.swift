@@ -16,10 +16,17 @@ extension FocusedValues {
     }
 }
 
+enum LeftPanelTab: String, CaseIterable {
+    case library = "Library"
+    case outline = "Outline"
+}
+
 struct BuilderWorkspaceV2: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.undoManager) private var undoManager
     @Bindable var store: ProjectStore
+
+    @State private var leftPanelTab: LeftPanelTab = .library
 
     private var theme: WorkspaceTheme {
         WorkspaceTheme(colorScheme: colorScheme)
@@ -42,20 +49,9 @@ struct BuilderWorkspaceV2: View {
             )
             Divider()
             HStack(spacing: 0) {
-                VStack(spacing: 0) {
-                    ScreenListView(store: store, theme: theme)
-                    Divider()
-                    ComponentLibraryView(
-                        theme: theme,
-                        blocks: store.currentBlocks,
-                        selectedBlockID: store.selectedBlockID,
-                        onAddBlock: { kind in store.addBlock(for: kind) },
-                        onSelectBlock: { id in store.selectedBlockID = id },
-                        onMoveBlock: { source, dest in store.moveBlock(from: source, to: dest) }
-                    )
-                }
-                .frame(width: 240)
-                .background(theme.workspaceBackground)
+                leftPanel
+                    .frame(width: 250)
+                    .background(theme.workspaceBackground)
                 Divider()
                 CanvasColumnView(
                     theme: theme,
@@ -91,6 +87,65 @@ struct BuilderWorkspaceV2: View {
                 onDismiss: { store.showingTemplateGallery = false }
             )
         }
+    }
+
+    // MARK: - Left Panel
+
+    private var leftPanel: some View {
+        VStack(spacing: 0) {
+            ScreenListView(store: store, theme: theme)
+            Divider()
+            leftPanelTabBar
+            Divider()
+            Group {
+                switch leftPanelTab {
+                case .library:
+                    ComponentLibraryView(
+                        theme: theme,
+                        onAddBlock: { kind in store.addBlock(for: kind) }
+                    )
+                case .outline:
+                    CanvasOutlineView(
+                        theme: theme,
+                        blocks: store.currentBlocks,
+                        selectedBlockID: store.selectedBlockID,
+                        onSelectBlock: { id in store.selectedBlockID = id },
+                        onMoveBlock: { source, dest in store.moveBlock(from: source, to: dest) }
+                    )
+                }
+            }
+        }
+    }
+
+    private var leftPanelTabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(LeftPanelTab.allCases, id: \.self) { tab in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        leftPanelTab = tab
+                    }
+                } label: {
+                    HStack(spacing: Spacing.xs) {
+                        Image(systemName: tab == .library ? "square.grid.2x2" : "list.bullet.indent")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text(tab.rawValue)
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 7)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(leftPanelTab == tab ? theme.panelBackground : Color.clear)
+                            .shadow(color: leftPanelTab == tab ? theme.cardShadowColor : .clear, radius: 2, y: 1)
+                    )
+                    .foregroundStyle(leftPanelTab == tab ? .primary : .secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, Spacing.sm)
+        .padding(.vertical, Spacing.sm)
+        .background(theme.workspaceBackground)
     }
 
     private var bindingForSelectedBlock: Binding<CanvasBlock>? {

@@ -12,6 +12,8 @@ struct InspectorView: View {
     let onReset: () -> Void
     let onDelete: () -> Void
 
+    @State private var expandedSections: Set<InspectorSection> = [.content, .typography, .colors, .layout, .style]
+
     init(binding: Binding<CanvasBlock>?, screens: [Screen] = [],
          onDuplicate: @escaping () -> Void, onReset: @escaping () -> Void,
          onDelete: @escaping () -> Void) {
@@ -25,228 +27,508 @@ struct InspectorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-                .padding(20)
+                .padding(Spacing.xl)
             Divider()
             if let binding = binding {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
-                        componentControls(binding: binding)
+                        contentSection(binding: binding)
+                        typographySection(binding: binding)
+                        colorsSection(binding: binding)
+                        layoutSection(binding: binding)
+                        styleSection(binding: binding)
                         if screens.count > 1 {
-                            sectionDivider
-                            navigationControls(binding: binding)
+                            navigationSection(binding: binding)
                         }
-                        sectionDivider
                         actionButtons
+                            .padding(.top, Spacing.lg)
+                            .padding(.horizontal, Spacing.xl)
+                            .padding(.bottom, Spacing.xl)
                     }
-                    .padding(20)
+                    .frame(maxWidth: .infinity)
                 }
             } else {
                 emptyState
                 Spacer()
             }
         }
+        .clipped()
     }
 
     // MARK: - Header
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Inspector")
-                .font(.title3.weight(.semibold))
-            Text(binding?.wrappedValue.kind.displayName ?? "Select an element")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+        HStack(spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Inspector")
+                    .font(TypographyPreset.panelTitle)
+                if let kind = binding?.wrappedValue.kind {
+                    HStack(spacing: 6) {
+                        Image(systemName: kind.iconSystemName)
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(kind.paletteColor)
+                        Text(kind.displayName)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule()
+                            .fill(kind.paletteColor.opacity(0.12))
+                    )
+                } else {
+                    Text("Select an element")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            Spacer()
         }
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("No selection")
-                .font(.headline)
-            Text("Tap a component in the outline or on the canvas.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+        VStack(spacing: Spacing.md) {
+            Image(systemName: "cursorarrow.click.2")
+                .font(.system(size: 28, weight: .light))
+                .foregroundStyle(.quaternary)
+            VStack(spacing: Spacing.xs) {
+                Text("No selection")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("Tap a component on the canvas or in the outline.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
         }
-        .padding(20)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 60)
+        .padding(.horizontal, Spacing.xl)
     }
 
-    private var sectionDivider: some View {
-        Divider().padding(.vertical, 16)
+    // MARK: - Collapsible Sections
+
+    private func contentSection(binding: Binding<CanvasBlock>) -> some View {
+        let kind = binding.wrappedValue.kind
+        let hasContent = kind != .divider && kind != .spacer && kind != .progressBar
+        return Group {
+            if hasContent {
+                collapsibleSection(.content) {
+                    VStack(alignment: .leading, spacing: Spacing.md) {
+                        contentControls(binding: binding, kind: kind)
+                    }
+                }
+            }
+        }
     }
 
-    // MARK: - Per-Component Controls
+    private func typographySection(binding: Binding<CanvasBlock>) -> some View {
+        let kind = binding.wrappedValue.kind
+        let hasTypography: Bool = {
+            switch kind {
+            case .heroTitle, .bodyText, .caption, .badge,
+                 .primaryButton, .secondaryButton, .linkButton,
+                 .textField, .searchBar, .toggle, .slider,
+                 .list, .card, .iconRow, .segmentedControl,
+                 .symbol, .image, .avatar:
+                return true
+            default:
+                return false
+            }
+        }()
+        return Group {
+            if hasTypography {
+                collapsibleSection(.typography) {
+                    VStack(alignment: .leading, spacing: Spacing.md) {
+                        typographyControls(binding: binding, kind: kind)
+                    }
+                }
+            }
+        }
+    }
+
+    private func colorsSection(binding: Binding<CanvasBlock>) -> some View {
+        let kind = binding.wrappedValue.kind
+        let hasColors = kind != .spacer
+        return Group {
+            if hasColors {
+                collapsibleSection(.colors) {
+                    VStack(alignment: .leading, spacing: Spacing.md) {
+                        colorControls(binding: binding, kind: kind)
+                    }
+                }
+            }
+        }
+    }
+
+    private func layoutSection(binding: Binding<CanvasBlock>) -> some View {
+        collapsibleSection(.layout) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                layoutControls(binding: binding, kind: binding.wrappedValue.kind)
+            }
+        }
+    }
+
+    private func styleSection(binding: Binding<CanvasBlock>) -> some View {
+        let kind = binding.wrappedValue.kind
+        let hasStyle = kind != .spacer
+        return Group {
+            if hasStyle {
+                collapsibleSection(.style) {
+                    VStack(alignment: .leading, spacing: Spacing.md) {
+                        styleControls(binding: binding, kind: kind)
+                    }
+                }
+            }
+        }
+    }
+
+    private func navigationSection(binding: Binding<CanvasBlock>) -> some View {
+        collapsibleSection(.navigation) {
+            navigationControls(binding: binding)
+        }
+    }
+
+    // MARK: - Content Controls (per kind)
 
     @ViewBuilder
-    private func componentControls(binding: Binding<CanvasBlock>) -> some View {
-        let kind = binding.wrappedValue.kind
-
-        VStack(alignment: .leading, spacing: 14) {
-            if kind != .spacer {
-                compactSlider(value: binding.spacingBefore, range: 0...48, label: "Spacing Above")
+    private func contentControls(binding: Binding<CanvasBlock>, kind: CanvasBlock.Kind) -> some View {
+        switch kind {
+        case .heroTitle, .bodyText:
+            textField("Text", text: binding.content, axis: .vertical)
+        case .caption:
+            textField("Text", text: binding.content)
+        case .badge:
+            textField("Label", text: binding.content)
+        case .primaryButton, .secondaryButton:
+            textField("Title", text: binding.content)
+            textField("Icon (SF Symbol)", text: binding.symbolName)
+        case .linkButton:
+            textField("Title", text: binding.content)
+            textField("Icon (SF Symbol)", text: binding.symbolName)
+        case .textField:
+            textField("Placeholder", text: binding.content)
+        case .searchBar:
+            textField("Placeholder", text: binding.content)
+            textField("Icon (SF Symbol)", text: binding.symbolName)
+        case .toggle:
+            textField("Label", text: binding.content)
+            toggleStatePicker(binding: binding)
+        case .slider:
+            textField("Label", text: binding.content)
+            compactSlider(value: binding.symbolScale, range: 0...1, label: "Value", format: "%.0f%%", multiplier: 100)
+        case .segmentedControl:
+            listItemsEditor(binding: binding, itemLabel: "Segment", maxItems: 5)
+            HStack {
+                Text("Selected").font(TypographyPreset.controlLabel).foregroundStyle(.secondary)
+                Spacer()
+                Stepper(
+                    "\(Int(binding.symbolScale.wrappedValue) + 1)",
+                    value: binding.symbolScale,
+                    in: 0...Double(max(binding.listItems.wrappedValue.count - 1, 0)),
+                    step: 1
+                )
+                .frame(maxWidth: 120)
             }
+        case .symbol:
+            textField("SF Symbol", text: binding.symbolName)
+            compactSlider(value: binding.symbolScale, range: 0.4...2.0, label: "Scale", format: "%.0f%%", multiplier: 100)
+        case .image:
+            textField("SF Symbol", text: binding.symbolName)
+            compactSlider(value: binding.symbolScale, range: 0.4...2.0, label: "Size", format: "%.0f%%", multiplier: 100)
+        case .avatar:
+            textField("SF Symbol", text: binding.symbolName)
+            compactSlider(value: binding.symbolScale, range: 0.5...3.0, label: "Size", format: "%.0f%%", multiplier: 100)
+        case .mapPlaceholder:
+            compactSlider(value: binding.symbolScale, range: 0.5...2.0, label: "Height", format: "%.0f%%", multiplier: 100)
+        case .list:
+            listItemsEditor(binding: binding)
+        case .card:
+            textField("Title", text: binding.content)
+            subtitleField(binding: binding)
+            textField("Icon (SF Symbol)", text: binding.symbolName)
+        case .iconRow:
+            textField("Title", text: binding.content)
+            valueField(binding: binding)
+            textField("Icon (SF Symbol)", text: binding.symbolName)
+            chevronToggle(binding: binding)
+        case .progressBar:
+            compactSlider(value: binding.symbolScale, range: 0...1, label: "Progress", format: "%.0f%%", multiplier: 100)
+        default:
+            EmptyView()
+        }
+    }
+
+    // MARK: - Typography Controls
+
+    @ViewBuilder
+    private func typographyControls(binding: Binding<CanvasBlock>, kind: CanvasBlock.Kind) -> some View {
+        switch kind {
+        case .heroTitle:
+            fontSizeStepper(binding: binding, range: 16...60)
+            fontWeightPicker(binding: binding)
+            alignmentPicker(binding: binding)
+            compactSlider(value: binding.lineSpacing, range: 0...20, label: "Line Spacing")
+        case .bodyText:
+            fontSizeStepper(binding: binding, range: 12...36)
+            fontWeightPicker(binding: binding)
+            alignmentPicker(binding: binding)
+            compactSlider(value: binding.lineSpacing, range: 0...20, label: "Line Spacing")
+        case .caption:
+            fontSizeStepper(binding: binding, range: 8...22)
+            fontWeightPicker(binding: binding)
+            alignmentPicker(binding: binding)
+            compactSlider(value: binding.lineSpacing, range: 0...12, label: "Line Spacing")
+        case .badge:
+            fontSizeStepper(binding: binding, range: 8...22)
+            fontWeightPicker(binding: binding)
+            alignmentPicker(binding: binding)
+        case .primaryButton, .secondaryButton:
+            fontSizeStepper(binding: binding, range: 12...30)
+            fontWeightPicker(binding: binding, options: [.medium, .semibold, .bold])
+            alignmentPicker(binding: binding)
+        case .linkButton:
+            fontSizeStepper(binding: binding, range: 11...26)
+            fontWeightPicker(binding: binding)
+            alignmentPicker(binding: binding)
+        case .textField:
+            fontSizeStepper(binding: binding, range: 12...26)
+            fontWeightPicker(binding: binding)
+        case .searchBar:
+            fontSizeStepper(binding: binding, range: 12...26)
+            fontWeightPicker(binding: binding)
+        case .toggle:
+            fontSizeStepper(binding: binding, range: 12...26)
+            fontWeightPicker(binding: binding)
+        case .slider:
+            fontSizeStepper(binding: binding, range: 12...24)
+            fontWeightPicker(binding: binding)
+        case .list:
+            fontSizeStepper(binding: binding, range: 12...26)
+            fontWeightPicker(binding: binding)
+        case .card:
+            fontSizeStepper(binding: binding, range: 12...28)
+            fontWeightPicker(binding: binding)
+            compactSlider(value: binding.lineSpacing, range: 0...12, label: "Line Spacing")
+        case .iconRow:
+            fontSizeStepper(binding: binding, range: 12...24)
+            fontWeightPicker(binding: binding)
+        case .segmentedControl:
+            fontSizeStepper(binding: binding, range: 11...20)
+            fontWeightPicker(binding: binding)
+        case .symbol:
+            fontWeightPicker(binding: binding)
+        case .image:
+            fontWeightPicker(binding: binding)
+        case .avatar:
+            fontWeightPicker(binding: binding)
+        default:
+            EmptyView()
+        }
+    }
+
+    // MARK: - Color Controls
+
+    @ViewBuilder
+    private func colorControls(binding: Binding<CanvasBlock>, kind: CanvasBlock.Kind) -> some View {
+        switch kind {
+        case .heroTitle, .bodyText, .caption:
+            colorRow("Text Color", selection: binding.textColor)
+            colorRow("Background", selection: binding.fillColor)
+        case .badge:
+            colorRow("Label Color", selection: binding.textColor)
+            colorRow("Background", selection: binding.fillColor)
+        case .primaryButton:
+            colorRow("Label Color", selection: binding.textColor)
+            colorRow("Background", selection: binding.fillColor)
+        case .secondaryButton:
+            colorRow("Label / Border", selection: binding.textColor)
+            colorRow("Background", selection: binding.fillColor)
+        case .linkButton:
+            colorRow("Color", selection: binding.textColor)
+        case .textField, .searchBar:
+            colorRow("Placeholder", selection: binding.textColor)
+            colorRow("Background", selection: binding.fillColor)
+        case .toggle:
+            colorRow("Label Color", selection: binding.textColor)
+            colorRow("Tint", selection: binding.fillColor)
+        case .slider:
+            colorRow("Label Color", selection: binding.textColor)
+            colorRow("Tint", selection: binding.fillColor)
+        case .segmentedControl:
+            colorRow("Text Color", selection: binding.textColor)
+            colorRow("Background", selection: binding.fillColor)
+        case .symbol:
+            colorRow("Color", selection: binding.fillColor)
+        case .image:
+            colorRow("Icon Color", selection: binding.textColor)
+            colorRow("Background", selection: binding.fillColor)
+        case .avatar:
+            colorRow("Icon Color", selection: binding.textColor)
+            colorRow("Background", selection: binding.fillColor)
+        case .mapPlaceholder:
+            colorRow("Background", selection: binding.fillColor)
+        case .list:
+            colorRow("Text Color", selection: binding.textColor)
+            colorRow("Background", selection: binding.fillColor)
+        case .card:
+            colorRow("Text Color", selection: binding.textColor)
+            colorRow("Background", selection: binding.fillColor)
+        case .iconRow:
+            colorRow("Icon Color", selection: binding.fillColor)
+            colorRow("Text Color", selection: binding.textColor)
+        case .divider:
+            colorRow("Color", selection: binding.fillColor)
+        case .progressBar:
+            colorRow("Tint", selection: binding.fillColor)
+        default:
+            EmptyView()
+        }
+    }
+
+    // MARK: - Layout Controls
+
+    @ViewBuilder
+    private func layoutControls(binding: Binding<CanvasBlock>, kind: CanvasBlock.Kind) -> some View {
+        if kind == .spacer {
+            compactSlider(value: binding.spacingBefore, range: 4...200, label: "Height")
+        } else {
+            compactSlider(value: binding.spacingBefore, range: 0...60, label: "Spacing Above")
 
             switch kind {
-            case .heroTitle:
-                textField("Text", text: binding.content, axis: .vertical)
-                alignmentPicker(binding: binding)
-                fontSizeStepper(binding: binding, range: 16...44)
-                fontWeightPicker(binding: binding)
-                colorRow("Text Color", selection: binding.textColor)
-
-            case .bodyText:
-                textField("Text", text: binding.content, axis: .vertical)
-                alignmentPicker(binding: binding)
-                fontSizeStepper(binding: binding, range: 14...32)
-                fontWeightPicker(binding: binding)
-                colorRow("Text Color", selection: binding.textColor)
-
-            case .caption:
-                textField("Text", text: binding.content)
-                alignmentPicker(binding: binding)
-                fontSizeStepper(binding: binding, range: 10...18)
-                colorRow("Text Color", selection: binding.textColor)
-
+            case .heroTitle, .bodyText, .caption:
+                paddingSliders(binding: binding, hRange: 0...32, vRange: 0...24)
+                compactSlider(value: binding.cornerRadius, range: 0...24, label: "Corner Radius")
             case .badge:
-                textField("Label", text: binding.content)
-                alignmentPicker(binding: binding)
-                fontSizeStepper(binding: binding, range: 10...18)
-                colorRow("Label Color", selection: binding.textColor)
-                colorRow("Background", selection: binding.fillColor)
-                paddingSliders(binding: binding, hRange: 6...20, vRange: 2...12)
-                compactSlider(value: binding.cornerRadius, range: 4...20, label: "Corner Radius")
-
-            case .primaryButton:
-                textField("Title", text: binding.content)
-                fontSizeStepper(binding: binding, range: 14...26)
-                fontWeightPicker(binding: binding, options: [.medium, .semibold, .bold])
-                colorRow("Label Color", selection: binding.textColor)
-                colorRow("Background", selection: binding.fillColor)
-                paddingSliders(binding: binding, hRange: 8...32, vRange: 6...22)
-                compactSlider(value: binding.cornerRadius, range: 4...30, label: "Corner Radius")
-
-            case .secondaryButton:
-                textField("Title", text: binding.content)
-                fontSizeStepper(binding: binding, range: 14...26)
-                fontWeightPicker(binding: binding, options: [.medium, .semibold, .bold])
-                colorRow("Color", selection: binding.textColor)
-                paddingSliders(binding: binding, hRange: 8...32, vRange: 6...22)
-                compactSlider(value: binding.cornerRadius, range: 4...30, label: "Corner Radius")
-
-            case .linkButton:
-                textField("Title", text: binding.content)
-                alignmentPicker(binding: binding)
-                fontSizeStepper(binding: binding, range: 13...22)
-                fontWeightPicker(binding: binding)
-                colorRow("Color", selection: binding.textColor)
-
-            case .textField:
-                textField("Placeholder", text: binding.content)
-                fontSizeStepper(binding: binding, range: 14...22)
-                colorRow("Placeholder", selection: binding.textColor)
-                colorRow("Background", selection: binding.fillColor)
-                paddingSliders(binding: binding, hRange: 8...24, vRange: 6...18)
-                compactSlider(value: binding.cornerRadius, range: 4...20, label: "Corner Radius")
-
-            case .searchBar:
-                textField("Placeholder", text: binding.content)
-                fontSizeStepper(binding: binding, range: 14...20)
-                colorRow("Placeholder", selection: binding.textColor)
-                colorRow("Background", selection: binding.fillColor)
-                paddingSliders(binding: binding, hRange: 8...24, vRange: 6...18)
-                compactSlider(value: binding.cornerRadius, range: 4...20, label: "Corner Radius")
-
-            case .toggle:
-                textField("Label", text: binding.content)
-                fontSizeStepper(binding: binding, range: 14...22)
-                toggleStatePicker(binding: binding)
-                colorRow("Label Color", selection: binding.textColor)
-                colorRow("Tint", selection: binding.fillColor)
-
-            case .slider:
-                textField("Label", text: binding.content)
-                compactSlider(value: binding.symbolScale, range: 0...1, label: "Value", format: "%.0f%%", multiplier: 100)
-                colorRow("Label Color", selection: binding.textColor)
-                colorRow("Tint", selection: binding.fillColor)
-
-            case .segmentedControl:
-                listItemsEditor(binding: binding, itemLabel: "Segment", maxItems: 5)
-                HStack {
-                    Text("Selected").font(.footnote).foregroundStyle(.secondary)
-                    Spacer()
-                    Stepper(
-                        "\(Int(binding.symbolScale.wrappedValue) + 1)",
-                        value: binding.symbolScale,
-                        in: 0...Double(max(binding.listItems.wrappedValue.count - 1, 0)),
-                        step: 1
-                    )
-                    .frame(width: 120)
-                }
-                colorRow("Text Color", selection: binding.textColor)
-                colorRow("Background", selection: binding.fillColor)
-                compactSlider(value: binding.cornerRadius, range: 4...16, label: "Corner Radius")
-
-            case .symbol:
-                textField("SF Symbol", text: binding.symbolName)
-                compactSlider(value: binding.symbolScale, range: 0.7...1.6, label: "Scale", format: "%.0f%%", multiplier: 100)
-                colorRow("Color", selection: binding.fillColor)
-
-            case .image:
-                textField("SF Symbol", text: binding.symbolName)
-                compactSlider(value: binding.symbolScale, range: 0.4...1.5, label: "Size", format: "%.0f%%", multiplier: 100)
-                colorRow("Icon Color", selection: binding.textColor)
-                colorRow("Background", selection: binding.fillColor)
-                compactSlider(value: binding.cornerRadius, range: 0...24, label: "Corner Radius")
-
-            case .avatar:
-                textField("SF Symbol", text: binding.symbolName)
-                compactSlider(value: binding.symbolScale, range: 0.5...2.0, label: "Size", format: "%.0f%%", multiplier: 100)
-                alignmentPicker(binding: binding)
-                colorRow("Icon Color", selection: binding.textColor)
-                colorRow("Background", selection: binding.fillColor)
-
-            case .mapPlaceholder:
-                compactSlider(value: binding.symbolScale, range: 0.5...1.5, label: "Height", format: "%.0f%%", multiplier: 100)
-                colorRow("Background", selection: binding.fillColor)
-                compactSlider(value: binding.cornerRadius, range: 0...24, label: "Corner Radius")
-
-            case .list:
-                listItemsEditor(binding: binding)
-                fontSizeStepper(binding: binding, range: 14...22)
-                fontWeightPicker(binding: binding)
-                colorRow("Text Color", selection: binding.textColor)
-                colorRow("Background", selection: binding.fillColor)
-                paddingSliders(binding: binding, hRange: 12...24, vRange: 8...20)
-                compactSlider(value: binding.cornerRadius, range: 4...20, label: "Corner Radius")
-
-            case .card:
-                textField("Title", text: binding.content)
-                subtitleField(binding: binding)
-                textField("Icon (SF Symbol)", text: binding.symbolName)
-                fontSizeStepper(binding: binding, range: 14...24)
-                colorRow("Text Color", selection: binding.textColor)
-                colorRow("Background", selection: binding.fillColor)
-                paddingSliders(binding: binding, hRange: 12...24, vRange: 10...24)
+                paddingSliders(binding: binding, hRange: 4...28, vRange: 2...16)
                 compactSlider(value: binding.cornerRadius, range: 4...24, label: "Corner Radius")
-
+            case .primaryButton, .secondaryButton:
+                paddingSliders(binding: binding, hRange: 4...40, vRange: 4...28)
+                compactSlider(value: binding.cornerRadius, range: 0...40, label: "Corner Radius")
+            case .linkButton:
+                paddingSliders(binding: binding, hRange: 0...24, vRange: 0...16)
+            case .textField, .searchBar:
+                paddingSliders(binding: binding, hRange: 6...32, vRange: 4...24)
+                compactSlider(value: binding.cornerRadius, range: 0...28, label: "Corner Radius")
+            case .toggle:
+                paddingSliders(binding: binding, hRange: 0...24, vRange: 0...16)
+            case .slider:
+                paddingSliders(binding: binding, hRange: 0...24, vRange: 0...16)
+                Text("V Padding also controls track height")
+                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+            case .segmentedControl:
+                paddingSliders(binding: binding, hRange: 0...16, vRange: 4...20)
+                compactSlider(value: binding.cornerRadius, range: 4...20, label: "Corner Radius")
+            case .symbol:
+                alignmentPicker(binding: binding)
+            case .image:
+                compactSlider(value: binding.cornerRadius, range: 0...40, label: "Corner Radius")
+                alignmentPicker(binding: binding)
+            case .avatar:
+                alignmentPicker(binding: binding)
+            case .mapPlaceholder:
+                compactSlider(value: binding.cornerRadius, range: 0...32, label: "Corner Radius")
+            case .list:
+                paddingSliders(binding: binding, hRange: 8...32, vRange: 6...24)
+                compactSlider(value: binding.cornerRadius, range: 0...28, label: "Corner Radius")
+            case .card:
+                paddingSliders(binding: binding, hRange: 8...32, vRange: 6...32)
+                compactSlider(value: binding.cornerRadius, range: 0...32, label: "Corner Radius")
             case .iconRow:
-                textField("Title", text: binding.content)
-                valueField(binding: binding)
-                textField("Icon (SF Symbol)", text: binding.symbolName)
-                chevronToggle(binding: binding)
-                colorRow("Icon Color", selection: binding.fillColor)
-                colorRow("Text Color", selection: binding.textColor)
-                compactSlider(value: binding.cornerRadius, range: 0...16, label: "Corner Radius")
-
+                paddingSliders(binding: binding, hRange: 8...32, vRange: 6...24)
+                compactSlider(value: binding.cornerRadius, range: 0...24, label: "Corner Radius")
             case .divider:
-                colorRow("Color", selection: binding.fillColor)
-
-            case .spacer:
-                compactSlider(value: binding.spacingBefore, range: 8...120, label: "Height")
-
+                compactSlider(value: binding.borderWidth, range: 0...6, label: "Thickness")
+                paddingSliders(binding: binding, hRange: 0...60, vRange: 0...0)
             case .progressBar:
-                compactSlider(value: binding.symbolScale, range: 0...1, label: "Progress", format: "%.0f%%", multiplier: 100)
-                colorRow("Tint", selection: binding.fillColor)
-                compactSlider(value: binding.cornerRadius, range: 2...12, label: "Corner Radius")
+                compactSlider(value: binding.verticalPadding, range: 4...24, label: "Bar Height")
+                compactSlider(value: binding.cornerRadius, range: 0...16, label: "Corner Radius")
+            default:
+                EmptyView()
+            }
+        }
+    }
+
+    // MARK: - Style & Effects Controls
+
+    @ViewBuilder
+    private func styleControls(binding: Binding<CanvasBlock>, kind: CanvasBlock.Kind) -> some View {
+        compactSlider(value: binding.opacity, range: 0.05...1, label: "Opacity", format: "%.0f%%", multiplier: 100)
+
+        let supportsShadow: Bool = {
+            switch kind {
+            case .heroTitle, .bodyText, .primaryButton, .secondaryButton,
+                 .badge, .card, .iconRow, .image, .avatar,
+                 .list, .textField, .searchBar, .mapPlaceholder, .symbol:
+                return true
+            default:
+                return false
+            }
+        }()
+
+        if supportsShadow {
+            compactSlider(value: binding.shadowRadius, range: 0...30, label: "Shadow")
+        }
+
+        let supportsBorder: Bool = {
+            switch kind {
+            case .heroTitle, .bodyText, .caption, .badge,
+                 .primaryButton, .secondaryButton,
+                 .card, .iconRow, .image, .avatar,
+                 .list, .textField, .searchBar, .mapPlaceholder:
+                return true
+            default:
+                return false
+            }
+        }()
+
+        if supportsBorder {
+            compactSlider(value: binding.borderWidth, range: 0...6, label: "Border Width")
+        }
+    }
+
+    // MARK: - Collapsible Section Wrapper
+
+    private func collapsibleSection<Content: View>(_ section: InspectorSection, @ViewBuilder content: @escaping () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Divider()
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    if expandedSections.contains(section) {
+                        expandedSections.remove(section)
+                    } else {
+                        expandedSections.insert(section)
+                    }
+                }
+            } label: {
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: section.icon)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 16)
+                    Text(section.title)
+                        .font(TypographyPreset.sectionHeader)
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(expandedSections.contains(section) ? 90 : 0))
+                }
+                .padding(.horizontal, Spacing.xl)
+                .padding(.vertical, Spacing.md)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if expandedSections.contains(section) {
+                VStack(alignment: .leading, spacing: Spacing.md) {
+                    content()
+                }
+                .padding(.horizontal, Spacing.xl)
+                .padding(.bottom, Spacing.lg)
+                .transition(.opacity)
             }
         }
     }
@@ -254,8 +536,8 @@ struct InspectorView: View {
     // MARK: - Reusable Control Builders
 
     private func textField(_ label: String, text: Binding<String>, axis: Axis = .horizontal) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label).font(.footnote).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            Text(label).font(TypographyPreset.controlLabel).foregroundStyle(.secondary)
             TextField(label, text: text, axis: axis)
                 .textFieldStyle(.roundedBorder)
                 .lineLimit(axis == .vertical ? 3 : 1)
@@ -263,8 +545,8 @@ struct InspectorView: View {
     }
 
     private func alignmentPicker(binding: Binding<CanvasBlock>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Alignment").font(.footnote).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            Text("Alignment").font(TypographyPreset.controlLabel).foregroundStyle(.secondary)
             Picker("Alignment", selection: binding.alignment) {
                 ForEach(BlockAlignment.allCases) { a in
                     Image(systemName: a == .leading ? "text.alignleft" : a == .center ? "text.aligncenter" : "text.alignright")
@@ -277,45 +559,44 @@ struct InspectorView: View {
 
     private func fontSizeStepper(binding: Binding<CanvasBlock>, range: ClosedRange<Double>) -> some View {
         HStack {
-            Text("Size").font(.footnote).foregroundStyle(.secondary)
+            Text("Size").font(TypographyPreset.controlLabel).foregroundStyle(.secondary)
             Spacer()
             Stepper("\(Int(binding.fontSize.wrappedValue)) pt", value: binding.fontSize, in: range, step: 1)
-                .frame(width: 140)
+                .frame(maxWidth: 130)
         }
     }
 
     private func fontWeightPicker(binding: Binding<CanvasBlock>, options: [FontWeightOption] = FontWeightOption.allCases) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Weight").font(.footnote).foregroundStyle(.secondary)
+        HStack {
+            Text("Weight").font(TypographyPreset.controlLabel).foregroundStyle(.secondary)
+            Spacer()
             Picker("Weight", selection: binding.fontWeight) {
                 ForEach(options) { o in Text(o.label).tag(o) }
             }
-            .pickerStyle(.segmented)
+            .pickerStyle(.menu)
+            .frame(maxWidth: 140)
         }
     }
 
     private func colorRow(_ label: String, selection: Binding<Color>) -> some View {
         ColorPicker(label, selection: selection)
-            .font(.footnote)
+            .font(TypographyPreset.controlLabel)
     }
 
     private func compactSlider(value: Binding<Double>, range: ClosedRange<Double>, label: String, format: String? = nil, multiplier: Double = 1) -> some View {
-        let span = range.upperBound - range.lowerBound
-        let step: Double = span <= 1 ? 0.01 : 1
-
-        return VStack(alignment: .leading, spacing: 4) {
+        return VStack(alignment: .leading, spacing: Spacing.xs) {
             HStack {
-                Text(label).font(.footnote).foregroundStyle(.secondary)
+                Text(label).font(TypographyPreset.controlLabel).foregroundStyle(.secondary)
                 Spacer()
                 if let fmt = format {
                     Text(String(format: fmt, value.wrappedValue * multiplier))
-                        .font(.footnote.monospacedDigit()).foregroundStyle(.secondary)
+                        .font(TypographyPreset.controlValue).foregroundStyle(.secondary)
                 } else {
                     Text("\(Int(value.wrappedValue)) pt")
-                        .font(.footnote.monospacedDigit()).foregroundStyle(.secondary)
+                        .font(TypographyPreset.controlValue).foregroundStyle(.secondary)
                 }
             }
-            Slider(value: value, in: range, step: step)
+            Slider(value: value, in: range)
                 .tint(.accentColor)
         }
     }
@@ -323,13 +604,15 @@ struct InspectorView: View {
     private func paddingSliders(binding: Binding<CanvasBlock>, hRange: ClosedRange<Double>, vRange: ClosedRange<Double>) -> some View {
         VStack(spacing: 6) {
             compactSlider(value: binding.horizontalPadding, range: hRange, label: "H Padding")
-            compactSlider(value: binding.verticalPadding, range: vRange, label: "V Padding")
+            if vRange.lowerBound != vRange.upperBound {
+                compactSlider(value: binding.verticalPadding, range: vRange, label: "V Padding")
+            }
         }
     }
 
     private func toggleStatePicker(binding: Binding<CanvasBlock>) -> some View {
         HStack {
-            Text("Initial State").font(.footnote).foregroundStyle(.secondary)
+            Text("Initial State").font(TypographyPreset.controlLabel).foregroundStyle(.secondary)
             Spacer()
             Picker("State", selection: Binding(
                 get: { binding.symbolScale.wrappedValue >= 0.5 ? 1.0 : 0.0 },
@@ -339,13 +622,13 @@ struct InspectorView: View {
                 Text("On").tag(1.0)
             }
             .pickerStyle(.segmented)
-            .frame(width: 120)
+            .frame(maxWidth: 120)
         }
     }
 
     private func subtitleField(binding: Binding<CanvasBlock>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Description").font(.footnote).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            Text("Description").font(TypographyPreset.controlLabel).foregroundStyle(.secondary)
             TextField("Description", text: Binding(
                 get: { binding.listItems.wrappedValue.first ?? "" },
                 set: { val in
@@ -362,8 +645,8 @@ struct InspectorView: View {
     }
 
     private func valueField(binding: Binding<CanvasBlock>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Value / Detail").font(.footnote).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            Text("Value / Detail").font(TypographyPreset.controlLabel).foregroundStyle(.secondary)
             TextField("Value", text: Binding(
                 get: { binding.listItems.wrappedValue.first ?? "" },
                 set: { val in
@@ -383,12 +666,12 @@ struct InspectorView: View {
             get: { binding.symbolScale.wrappedValue >= 0.5 },
             set: { binding.symbolScale.wrappedValue = $0 ? 1.0 : 0.0 }
         ))
-        .font(.footnote)
+        .font(TypographyPreset.controlLabel)
     }
 
     private func listItemsEditor(binding: Binding<CanvasBlock>, itemLabel: String = "Item", maxItems: Int = 10) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("\(itemLabel)s").font(.footnote).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text("\(itemLabel)s").font(TypographyPreset.controlLabel).foregroundStyle(.secondary)
             ForEach(Array(binding.listItems.enumerated()), id: \.offset) { index, _ in
                 HStack(spacing: 6) {
                     TextField("\(itemLabel) \(index + 1)", text: Binding(
@@ -400,7 +683,7 @@ struct InspectorView: View {
                         }
                     ))
                     .textFieldStyle(.roundedBorder)
-                    .font(.footnote)
+                    .font(.system(size: 12))
                     Button {
                         var items = binding.listItems.wrappedValue
                         items.remove(at: index)
@@ -418,7 +701,7 @@ struct InspectorView: View {
                 binding.listItems.wrappedValue = items
             } label: {
                 Label("Add \(itemLabel)", systemImage: "plus.circle")
-                    .font(.footnote)
+                    .font(.system(size: 12))
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
@@ -431,11 +714,9 @@ struct InspectorView: View {
     private static let noNavigationID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
 
     private func navigationControls(binding: Binding<CanvasBlock>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Navigation")
-                .font(.footnote.weight(.semibold))
+        VStack(alignment: .leading, spacing: Spacing.sm) {
             Text("Tap to navigate to another screen.")
-                .font(.caption2).foregroundStyle(.secondary)
+                .font(.system(size: 11)).foregroundStyle(.secondary)
 
             Picker("Destination", selection: Binding(
                 get: { binding.navigationTarget.wrappedValue ?? Self.noNavigationID },
@@ -455,9 +736,13 @@ struct InspectorView: View {
     // MARK: - Actions
 
     private var actionButtons: some View {
-        HStack(spacing: 8) {
-            Button("Duplicate", action: onDuplicate)
-            Button("Reset", action: onReset)
+        HStack(spacing: Spacing.sm) {
+            Button(action: onDuplicate) {
+                Label("Duplicate", systemImage: "plus.square.on.square")
+            }
+            Button(action: onReset) {
+                Label("Reset", systemImage: "arrow.counterclockwise")
+            }
             Spacer()
             Button(role: .destructive, action: onDelete) {
                 Label("Delete", systemImage: "trash")
@@ -465,6 +750,28 @@ struct InspectorView: View {
         }
         .controlSize(.small)
         .buttonStyle(.bordered)
+        .font(.system(size: 11))
+    }
+}
+
+// MARK: - Inspector Section
+
+private enum InspectorSection: String, Hashable {
+    case content, typography, colors, layout, style, navigation
+
+    var title: String {
+        rawValue.capitalized
+    }
+
+    var icon: String {
+        switch self {
+        case .content: return "text.cursor"
+        case .typography: return "textformat.size"
+        case .colors: return "paintpalette"
+        case .layout: return "ruler"
+        case .style: return "sparkles.rectangle.stack"
+        case .navigation: return "arrow.right.circle"
+        }
     }
 }
 

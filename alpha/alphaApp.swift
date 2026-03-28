@@ -33,6 +33,14 @@ struct BuilderCommands: Commands {
                 store?.exportCode()
             }
             .keyboardShortcut("e", modifiers: [.command, .shift])
+
+            Divider()
+
+            Button("Run on Simulator") {
+                store?.launchSimulator()
+            }
+            .keyboardShortcut("r", modifiers: .command)
+            .disabled(store?.isBuilding == true)
         }
 
         CommandGroup(after: .pasteboard) {

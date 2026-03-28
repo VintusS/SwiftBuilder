@@ -33,24 +33,49 @@ struct DevicePreview: View {
         .animation(.easeOut(duration: 0.2), value: zoom)
     }
 
+    @ViewBuilder
     private var screenContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(blocks) { block in
-                CanvasBlockView(
-                    block: block,
-                    appearance: appearance,
-                    isSelected: block.id == selectedID
-                )
-                .padding(.top, CGFloat(block.spacingBefore))
-                .onTapGesture {
-                    onSelect(block.id)
+        if blocks.isEmpty {
+            emptyCanvasState
+        } else {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(blocks) { block in
+                        CanvasBlockView(
+                            block: block,
+                            appearance: appearance,
+                            isSelected: block.id == selectedID
+                        )
+                        .padding(.top, CGFloat(block.spacingBefore))
+                        .id(block.id)
+                        .onTapGesture {
+                            onSelect(block.id)
+                        }
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    }
+                    Spacer(minLength: 16)
                 }
+                .padding(.horizontal, 24)
+                .padding(.top, device.safeAreaInsets.top)
+                .padding(.bottom, device.safeAreaInsets.bottom)
+                .animation(.spring(response: 0.35, dampingFraction: 0.8), value: blocks.map(\.id))
             }
-            Spacer(minLength: 16)
         }
-        .padding(.horizontal, 24)
-        .padding(.top, device.safeAreaInsets.top)
-        .padding(.bottom, device.safeAreaInsets.bottom)
+    }
+
+    private var emptyCanvasState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "plus.rectangle.on.rectangle")
+                .font(.system(size: 36, weight: .ultraLight))
+                .foregroundColor(appearance == .dark ? Color.white.opacity(0.15) : Color.black.opacity(0.12))
+            Text("Add components")
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundColor(appearance == .dark ? Color.white.opacity(0.25) : Color.black.opacity(0.20))
+            Text("Use the Library panel to start building")
+                .font(.system(size: 11, design: .rounded))
+                .foregroundColor(appearance == .dark ? Color.white.opacity(0.15) : Color.black.opacity(0.12))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -59,54 +84,118 @@ struct CanvasBlockView: View {
     let appearance: PreviewAppearance
     let isSelected: Bool
     var onButtonTap: (() -> Void)? = nil
-    
+
+    @State private var isHovered = false
+
     var body: some View {
-        SelectionOutline(isActive: isSelected, cornerRadius: block.selectionCornerRadius) {
+        SelectionOutline(isActive: isSelected, isHovered: isHovered, cornerRadius: block.selectionCornerRadius) {
             buildContent()
         }
         .contentShape(Rectangle())
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.12)) {
+                isHovered = hovering
+            }
+        }
     }
 
     @ViewBuilder
     private func buildContent() -> some View {
+        let rendered = buildRawContent()
+            .opacity(block.opacity)
+
+        let hasInternalBorder: Bool = {
+            switch block.kind {
+            case .divider, .spacer, .secondaryButton, .textField, .card, .avatar, .list:
+                return true
+            default:
+                return false
+            }
+        }()
+
+        if block.borderWidth > 0 && !hasInternalBorder {
+            rendered.overlay(
+                RoundedRectangle(cornerRadius: block.selectionCornerRadius - 2, style: .continuous)
+                    .stroke(block.textColor.opacity(0.5), lineWidth: CGFloat(block.borderWidth))
+            )
+        } else {
+            rendered
+        }
+    }
+
+    @ViewBuilder
+    private func buildRawContent() -> some View {
         switch block.kind {
         case .heroTitle:
             let titleColor = block.textColor.ensuringContrast(in: appearance, minimumLuminance: 0.75)
             Text(block.content)
                 .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
                 .foregroundColor(titleColor)
+                .lineSpacing(CGFloat(block.lineSpacing))
                 .multilineTextAlignment(block.alignment.textAlignment)
-                .padding(.vertical, 4)
+                .padding(.horizontal, CGFloat(block.horizontalPadding))
+                .padding(.vertical, max(4, CGFloat(block.verticalPadding)))
                 .frame(maxWidth: .infinity, alignment: block.alignment.frameAlignment)
+                .background {
+                    if block.fillColor != .clear {
+                        RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius), style: .continuous)
+                            .fill(block.fillColor)
+                    }
+                }
+                .shadow(color: .black.opacity(block.shadowRadius > 0 ? 0.12 : 0), radius: CGFloat(block.shadowRadius), x: 0, y: CGFloat(block.shadowRadius / 2))
         case .bodyText:
             let bodyColor = block.textColor.ensuringContrast(in: appearance, minimumLuminance: 0.68)
             Text(block.content)
                 .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
                 .foregroundColor(bodyColor.opacity(appearance == .dark ? 0.92 : 1))
-                .lineSpacing(4)
+                .lineSpacing(CGFloat(block.lineSpacing))
                 .multilineTextAlignment(block.alignment.textAlignment)
-                .padding(.vertical, 4)
+                .padding(.horizontal, CGFloat(block.horizontalPadding))
+                .padding(.vertical, max(4, CGFloat(block.verticalPadding)))
                 .frame(maxWidth: .infinity, alignment: block.alignment.frameAlignment)
+                .background {
+                    if block.fillColor != .clear {
+                        RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius), style: .continuous)
+                            .fill(block.fillColor)
+                    }
+                }
+                .shadow(color: .black.opacity(block.shadowRadius > 0 ? 0.12 : 0), radius: CGFloat(block.shadowRadius), x: 0, y: CGFloat(block.shadowRadius / 2))
         case .caption:
             let captionColor = block.textColor.ensuringContrast(in: appearance, minimumLuminance: 0.55)
             Text(block.content)
                 .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
                 .foregroundColor(captionColor)
+                .lineSpacing(CGFloat(block.lineSpacing))
                 .multilineTextAlignment(block.alignment.textAlignment)
+                .padding(.horizontal, CGFloat(block.horizontalPadding))
+                .padding(.vertical, CGFloat(block.verticalPadding))
                 .frame(maxWidth: .infinity, alignment: block.alignment.frameAlignment)
+                .background {
+                    if block.fillColor != .clear {
+                        RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius), style: .continuous)
+                            .fill(block.fillColor)
+                    }
+                }
 
         case .primaryButton:
             let labelColor = block.textColor.ensuringContrast(in: appearance, minimumLuminance: 0.82)
-            let buttonVisual = Text(block.content)
-                .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
+            let bgFill = block.fillColor.ensuringContrast(in: appearance, minimumLuminance: 0.32)
+            let buttonVisual = HStack(spacing: 8) {
+                if !block.symbolName.isEmpty {
+                    Image(systemName: block.symbolName)
+                        .font(.system(size: CGFloat(block.fontSize) - 2, weight: block.fontWeight.weight))
+                }
+                Text(block.content)
+                    .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
+            }
                 .foregroundColor(labelColor)
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, alignment: block.alignment.frameAlignment)
                 .padding(.horizontal, CGFloat(block.horizontalPadding))
                 .padding(.vertical, CGFloat(block.verticalPadding))
                 .background(
                     RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius), style: .continuous)
-                        .fill(block.fillColor.ensuringContrast(in: appearance, minimumLuminance: 0.32))
-                        .shadow(color: block.fillColor.opacity(0.24), radius: 10, x: 0, y: 8)
+                        .fill(bgFill)
+                        .shadow(color: block.fillColor.opacity(block.shadowRadius > 0 ? 0.24 : 0.24), radius: max(CGFloat(block.shadowRadius), 10), x: 0, y: max(CGFloat(block.shadowRadius * 0.8), 8))
                 )
             if let tap = onButtonTap {
                 Button(action: tap) { buttonVisual }.buttonStyle(.plain)
@@ -116,16 +205,24 @@ struct CanvasBlockView: View {
 
         case .secondaryButton:
             let borderColor = block.textColor.ensuringContrast(in: appearance, minimumLuminance: 0.5)
-            let buttonVisual = Text(block.content)
-                .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
+            let strokeW = block.borderWidth > 0 ? CGFloat(block.borderWidth) : 1.5
+            let buttonVisual = HStack(spacing: 8) {
+                if !block.symbolName.isEmpty {
+                    Image(systemName: block.symbolName)
+                        .font(.system(size: CGFloat(block.fontSize) - 2, weight: block.fontWeight.weight))
+                }
+                Text(block.content)
+                    .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
+            }
                 .foregroundColor(borderColor)
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, alignment: block.alignment.frameAlignment)
                 .padding(.horizontal, CGFloat(block.horizontalPadding))
                 .padding(.vertical, CGFloat(block.verticalPadding))
                 .background(
                     RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius), style: .continuous)
-                        .stroke(borderColor, lineWidth: 1.5)
+                        .stroke(borderColor, lineWidth: strokeW)
                 )
+                .shadow(color: .black.opacity(block.shadowRadius > 0 ? 0.08 : 0), radius: CGFloat(block.shadowRadius), x: 0, y: CGFloat(block.shadowRadius / 2))
             if let tap = onButtonTap {
                 Button(action: tap) { buttonVisual }.buttonStyle(.plain)
             } else {
@@ -134,8 +231,14 @@ struct CanvasBlockView: View {
 
         case .linkButton:
             let linkColor = block.textColor.ensuringContrast(in: appearance, minimumLuminance: 0.5)
-            let linkVisual = Text(block.content)
-                .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
+            let linkVisual = HStack(spacing: 6) {
+                if !block.symbolName.isEmpty {
+                    Image(systemName: block.symbolName)
+                        .font(.system(size: CGFloat(block.fontSize) - 2, weight: block.fontWeight.weight))
+                }
+                Text(block.content)
+                    .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
+            }
                 .foregroundColor(linkColor)
                 .frame(maxWidth: .infinity, alignment: block.alignment.frameAlignment)
             if let tap = onButtonTap {
@@ -147,10 +250,12 @@ struct CanvasBlockView: View {
         case .symbol:
             let symbolColor = block.fillColor.ensuringContrast(in: appearance, minimumLuminance: 0.6)
             Image(systemName: block.symbolName.isEmpty ? "sparkles" : block.symbolName)
-                .font(.system(size: 80 * block.symbolScale, weight: .light))
+                .font(.system(size: 80 * block.symbolScale, weight: block.fontWeight.weight))
                 .foregroundColor(symbolColor)
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, alignment: block.alignment.frameAlignment)
                 .padding(.vertical, 26)
+                .shadow(color: .black.opacity(block.shadowRadius > 0 ? 0.15 : 0), radius: CGFloat(block.shadowRadius), x: 0, y: CGFloat(block.shadowRadius / 2))
+
         case .list:
             let itemColor = block.textColor.ensuringContrast(in: appearance, minimumLuminance: 0.75)
             let bgColor = block.fillColor.ensuringContrast(in: appearance, minimumLuminance: 0.95)
@@ -181,6 +286,7 @@ struct CanvasBlockView: View {
                 RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius), style: .continuous)
                     .stroke(itemColor.opacity(0.1), lineWidth: 1)
             )
+            .shadow(color: .black.opacity(block.shadowRadius > 0 ? 0.08 : 0), radius: CGFloat(block.shadowRadius), x: 0, y: CGFloat(block.shadowRadius / 2))
 
         case .image:
             let bgColor = block.fillColor.ensuringContrast(in: appearance, minimumLuminance: 0.85)
@@ -188,11 +294,12 @@ struct CanvasBlockView: View {
                 RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius), style: .continuous)
                     .fill(bgColor)
                 Image(systemName: block.symbolName.isEmpty ? "photo.fill" : block.symbolName)
-                    .font(.system(size: 40 * block.symbolScale, weight: .light))
+                    .font(.system(size: 40 * block.symbolScale, weight: block.fontWeight.weight))
                     .foregroundColor(block.textColor.opacity(0.5))
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, alignment: block.alignment.frameAlignment)
             .frame(height: 160 * block.symbolScale)
+            .shadow(color: .black.opacity(block.shadowRadius > 0 ? 0.1 : 0), radius: CGFloat(block.shadowRadius), x: 0, y: CGFloat(block.shadowRadius / 2))
 
         case .textField:
             let placeholderColor = block.textColor.ensuringContrast(in: appearance, minimumLuminance: 0.55)
@@ -211,8 +318,9 @@ struct CanvasBlockView: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius), style: .continuous)
-                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                    .stroke(Color.secondary.opacity(0.2), lineWidth: max(1, CGFloat(block.borderWidth)))
             )
+            .shadow(color: .black.opacity(block.shadowRadius > 0 ? 0.08 : 0), radius: CGFloat(block.shadowRadius), x: 0, y: CGFloat(block.shadowRadius / 2))
 
         case .toggle:
             let labelColor = block.textColor.ensuringContrast(in: appearance, minimumLuminance: 0.75)
@@ -240,7 +348,8 @@ struct CanvasBlockView: View {
             let divColor = block.fillColor.ensuringContrast(in: appearance, minimumLuminance: 0.6)
             Rectangle()
                 .fill(divColor)
-                .frame(height: 1)
+                .frame(height: max(1, CGFloat(block.borderWidth > 0 ? block.borderWidth : 1)))
+                .padding(.horizontal, CGFloat(block.horizontalPadding))
                 .frame(maxWidth: .infinity)
 
         case .spacer:
@@ -257,7 +366,7 @@ struct CanvasBlockView: View {
                         .font(.system(size: CGFloat(block.fontSize), weight: index == selectedIdx ? .semibold : block.fontWeight.weight, design: .rounded))
                         .foregroundColor(textColor)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, CGFloat(max(block.verticalPadding, 8)))
                         .background(
                             RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius) - 1, style: .continuous)
                                 .fill(index == selectedIdx ? Color.white : Color.clear)
@@ -294,7 +403,7 @@ struct CanvasBlockView: View {
                             .frame(width: max(geo.size.width * progress, 6))
                     }
                 }
-                .frame(height: 6)
+                .frame(height: max(6, CGFloat(block.verticalPadding > 0 ? block.verticalPadding : 6)))
                 .clipShape(Capsule())
             }
 
@@ -310,6 +419,12 @@ struct CanvasBlockView: View {
                         .font(.system(size: size * 0.45, weight: .medium))
                         .foregroundColor(iconColor)
                 )
+                .overlay(
+                    block.borderWidth > 0
+                        ? Circle().stroke(block.textColor.opacity(0.3), lineWidth: CGFloat(block.borderWidth))
+                        : nil
+                )
+                .shadow(color: .black.opacity(block.shadowRadius > 0 ? 0.15 : 0), radius: CGFloat(block.shadowRadius), x: 0, y: CGFloat(block.shadowRadius / 2))
                 .frame(maxWidth: .infinity, alignment: block.alignment.frameAlignment)
 
         case .badge:
@@ -323,13 +438,14 @@ struct CanvasBlockView: View {
                 .background(
                     Capsule().fill(bgColor)
                 )
+                .shadow(color: .black.opacity(block.shadowRadius > 0 ? 0.12 : 0), radius: CGFloat(block.shadowRadius), x: 0, y: CGFloat(block.shadowRadius / 2))
                 .frame(maxWidth: .infinity, alignment: block.alignment.frameAlignment)
 
         case .searchBar:
             let placeholderColor = block.textColor.ensuringContrast(in: appearance, minimumLuminance: 0.55)
             let bgColor = block.fillColor.ensuringContrast(in: appearance, minimumLuminance: 0.88)
             HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
+                Image(systemName: block.symbolName.isEmpty ? "magnifyingglass" : block.symbolName)
                     .foregroundColor(placeholderColor)
                     .font(.system(size: CGFloat(block.fontSize) - 1))
                 Text(block.content)
@@ -343,10 +459,12 @@ struct CanvasBlockView: View {
                 RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius), style: .continuous)
                     .fill(bgColor)
             )
+            .shadow(color: .black.opacity(block.shadowRadius > 0 ? 0.08 : 0), radius: CGFloat(block.shadowRadius), x: 0, y: CGFloat(block.shadowRadius / 2))
 
         case .progressBar:
             let tintColor = block.fillColor.ensuringContrast(in: appearance, minimumLuminance: 0.4)
             let progress = min(max(block.symbolScale, 0), 1)
+            let barHeight = max(4, CGFloat(block.verticalPadding > 0 ? block.verticalPadding : 8))
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius), style: .continuous)
@@ -356,11 +474,12 @@ struct CanvasBlockView: View {
                         .frame(width: max(geo.size.width * progress, 4))
                 }
             }
-            .frame(height: 8)
+            .frame(height: barHeight)
 
         case .card:
             let titleColor = block.textColor.ensuringContrast(in: appearance, minimumLuminance: 0.75)
             let bgColor = block.fillColor.ensuringContrast(in: appearance, minimumLuminance: 0.9)
+            let shadowR = block.shadowRadius > 0 ? CGFloat(block.shadowRadius) : 8
             VStack(alignment: .leading, spacing: 8) {
                 if !block.symbolName.isEmpty {
                     Image(systemName: block.symbolName)
@@ -374,7 +493,7 @@ struct CanvasBlockView: View {
                     Text(subtitle)
                         .font(.system(size: max(CGFloat(block.fontSize) - 3, 12), design: .rounded))
                         .foregroundColor(titleColor.opacity(0.6))
-                        .lineSpacing(2)
+                        .lineSpacing(CGFloat(block.lineSpacing))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -383,11 +502,11 @@ struct CanvasBlockView: View {
             .background(
                 RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius), style: .continuous)
                     .fill(bgColor)
-                    .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+                    .shadow(color: .black.opacity(0.06), radius: shadowR, x: 0, y: shadowR / 2)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius), style: .continuous)
-                    .stroke(titleColor.opacity(0.06), lineWidth: 1)
+                    .stroke(titleColor.opacity(0.06), lineWidth: max(1, CGFloat(block.borderWidth)))
             )
 
         case .iconRow:
@@ -422,7 +541,7 @@ struct CanvasBlockView: View {
             .background(
                 RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius), style: .continuous)
                     .fill(appearance == .dark ? Color.white.opacity(0.06) : Color.white)
-                    .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
+                    .shadow(color: .black.opacity(block.shadowRadius > 0 ? 0.06 : 0.04), radius: max(4, CGFloat(block.shadowRadius)), x: 0, y: 2)
             )
 
         case .mapPlaceholder:
@@ -441,27 +560,43 @@ struct CanvasBlockView: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: 180 * block.symbolScale)
+            .shadow(color: .black.opacity(block.shadowRadius > 0 ? 0.1 : 0), radius: CGFloat(block.shadowRadius), x: 0, y: CGFloat(block.shadowRadius / 2))
         }
     }
 }
 
 struct SelectionOutline<Content: View>: View {
     let isActive: Bool
+    let isHovered: Bool
     let cornerRadius: CGFloat
     let content: Content
 
-    init(isActive: Bool, cornerRadius: CGFloat, @ViewBuilder content: () -> Content) {
+    init(isActive: Bool, isHovered: Bool = false, cornerRadius: CGFloat, @ViewBuilder content: () -> Content) {
         self.isActive = isActive
+        self.isHovered = isHovered
         self.cornerRadius = cornerRadius
         self.content = content()
+    }
+
+    private var strokeColor: Color {
+        if isActive { return Color.accentColor }
+        if isHovered { return Color.accentColor.opacity(0.35) }
+        return Color.clear
+    }
+
+    private var strokeWidth: CGFloat {
+        if isActive { return 2 }
+        if isHovered { return 1.5 }
+        return 0
     }
 
     var body: some View {
         content
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(isActive ? Color.accentColor : Color.clear, lineWidth: isActive ? 2 : 0)
+                    .stroke(strokeColor, lineWidth: strokeWidth)
             )
-            .animation(.easeInOut(duration: 0.18), value: isActive)
+            .animation(.easeInOut(duration: 0.15), value: isActive)
+            .animation(.easeInOut(duration: 0.12), value: isHovered)
     }
 }

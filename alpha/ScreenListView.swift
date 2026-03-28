@@ -13,10 +13,9 @@ struct ScreenListView: View {
     @State private var editingName: String = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Spacing.md) {
             HStack {
-                Text("Screens")
-                    .font(.title3.weight(.semibold))
+                PanelHeader("Screens", icon: "rectangle.stack", theme: theme)
                 Spacer()
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -25,19 +24,21 @@ struct ScreenListView: View {
                 } label: {
                     Image(systemName: "plus.circle.fill")
                         .foregroundColor(.accentColor)
-                        .imageScale(.large)
+                        .font(.system(size: 16))
                 }
                 .buttonStyle(.plain)
                 .help("Add a new screen")
             }
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
                 ForEach(store.screens) { screen in
                     screenRow(screen)
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 }
             }
+            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: store.screens.map(\.id))
         }
-        .padding(20)
+        .padding(Spacing.xl)
     }
 
     @ViewBuilder
@@ -47,6 +48,7 @@ struct ScreenListView: View {
         if editingScreenID == screen.id {
             TextField("Screen name", text: $editingName)
                 .textFieldStyle(.roundedBorder)
+                .font(.system(size: 12))
                 .onSubmit {
                     if !editingName.trimmingCharacters(in: .whitespaces).isEmpty {
                         store.renameScreen(id: screen.id, name: editingName)
@@ -54,50 +56,33 @@ struct ScreenListView: View {
                     editingScreenID = nil
                 }
         } else {
-            Button {
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-                    store.selectScreen(id: screen.id)
+            ScreenRow(
+                screen: screen,
+                isActive: isActive,
+                theme: theme,
+                onSelect: {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                        store.selectScreen(id: screen.id)
+                    }
                 }
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: isActive ? "rectangle.portrait.fill" : "rectangle.portrait")
-                        .foregroundColor(isActive ? .accentColor : .secondary)
-                        .frame(width: 18)
-                    Text(screen.name)
-                        .font(.callout.weight(isActive ? .semibold : .regular))
-                        .lineLimit(1)
-                    Spacer()
-                    Text("\(screen.blocks.count)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Capsule().fill(Color.secondary.opacity(0.12)))
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(theme.outlineFill(isActive: isActive))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .stroke(isActive ? Color.accentColor : theme.outlineStrokeColor,
-                                        lineWidth: isActive ? 1.4 : 1)
-                        )
-                )
-            }
-            .buttonStyle(.plain)
+            )
             .contextMenu {
-                Button("Rename") {
+                Button {
                     editingName = screen.name
                     editingScreenID = screen.id
+                } label: {
+                    Label("Rename", systemImage: "pencil")
                 }
-                Button("Duplicate") {
+                Button {
                     duplicateScreen(screen)
+                } label: {
+                    Label("Duplicate", systemImage: "plus.square.on.square")
                 }
                 Divider()
-                Button("Delete", role: .destructive) {
+                Button(role: .destructive) {
                     withAnimation { store.deleteScreen(id: screen.id) }
+                } label: {
+                    Label("Delete", systemImage: "trash")
                 }
                 .disabled(store.screens.count <= 1)
             }
@@ -111,5 +96,54 @@ struct ScreenListView: View {
         for i in copy.blocks.indices { copy.blocks[i].id = UUID() }
         store.screens.append(copy)
         store.selectScreen(id: copy.id)
+    }
+}
+
+// MARK: - Screen Row with Hover
+
+private struct ScreenRow: View {
+    let screen: Screen
+    let isActive: Bool
+    let theme: WorkspaceTheme
+    let onSelect: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: Spacing.sm) {
+                Image(systemName: isActive ? "rectangle.portrait.fill" : "rectangle.portrait")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(isActive ? .accentColor : .secondary)
+                    .frame(width: 16)
+                Text(screen.name)
+                    .font(.system(size: 12, weight: isActive ? .semibold : .medium))
+                    .lineLimit(1)
+                Spacer()
+                Text("\(screen.blocks.count)")
+                    .font(.system(size: 10, weight: .medium).monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(Color.secondary.opacity(0.10)))
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isActive ? theme.outlineFill(isActive: true)
+                          : isHovered ? theme.hoverOverlay : Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(isActive ? Color.accentColor.opacity(0.6) : Color.clear, lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.12)) {
+                isHovered = hovering
+            }
+        }
     }
 }
