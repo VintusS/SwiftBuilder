@@ -68,7 +68,7 @@ struct WorkspaceToolbar: View {
                 }
             }
             .pickerStyle(.menu)
-            .frame(width: 140)
+            .frame(width: 180)
 
             Picker("Appearance", selection: $appearance) {
                 ForEach(PreviewAppearance.allCases) { mode in

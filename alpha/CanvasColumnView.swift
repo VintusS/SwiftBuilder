@@ -38,7 +38,7 @@ struct CanvasColumnView: View {
 
     private var canvasHeader: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
-            Label(screenName, systemImage: "iphone")
+            Label(screenName, systemImage: selectedDevice.formFactor == .iPad ? "ipad" : "iphone")
                 .font(.system(size: 15, weight: .semibold, design: .rounded))
             HStack(spacing: 6) {
                 Text(selectedDevice.displayName)

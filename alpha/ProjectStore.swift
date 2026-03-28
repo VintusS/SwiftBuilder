@@ -20,7 +20,7 @@ class ProjectStore {
 
     // MARK: - Editor State
 
-    var selectedDevice: DevicePreset = .iphone15Pro
+    var selectedDevice: DevicePreset = .iphone16Pro
     var appearance: PreviewAppearance = .light
     var zoomLevel: Double = 0.9
     var projectName: String = "Prototype"
