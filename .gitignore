@@ -1,0 +1,21 @@
+# Xcode build output
+build/
+DerivedData/
+
+# Xcode user-specific data
+xcuserdata/
+*.xcuserstate
+xcschememanagement.plist
+
+# macOS metadata
+.DS_Store
+**/.DS_Store
+
+# Generated/runtime project saves
+SavedProjects/
+
+# Generated PreviewRunner bundle JSON (copied at build time)
+PreviewRunner/Prototype.json
+
+# Temporary build scripts
+_build_preview.sh

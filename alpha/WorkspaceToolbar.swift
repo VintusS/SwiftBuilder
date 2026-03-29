@@ -39,7 +39,7 @@ struct WorkspaceToolbar: View {
 
     private var leftZone: some View {
         HStack(spacing: Spacing.md) {
-            Text("alpha")
+            Text("SwiftBuilder")
                 .font(TypographyPreset.toolbarTitle)
                 .foregroundStyle(.primary)
 

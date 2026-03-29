@@ -33,7 +33,7 @@ struct ContentView: View {
             } else {
                 NavigationStack {
                     ScreenContentView(screen: screens[0], allScreens: screens,
-                                      appearance: appearance, alertMessage: $alertMessage)
+                                      appearance: appearance, isRoot: true, alertMessage: $alertMessage)
                     .navigationDestination(for: UUID.self) { screenID in
                         if let target = screens.first(where: { $0.id == screenID }) {
                             ScreenContentView(screen: target, allScreens: screens,
@@ -165,16 +165,28 @@ struct ScreenContentView: View {
     let screen: Screen
     let allScreens: [Screen]
     let appearance: PreviewAppearance
+    var isRoot: Bool = false
     @Binding var alertMessage: String?
 
     var body: some View {
+        let rows = BlockRow.group(screen.blocks)
         ZStack {
             appearance.canvasBackground.ignoresSafeArea()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(screen.blocks) { block in
-                        blockRow(block)
+                    ForEach(rows) { row in
+                        if row.isGrouped {
+                            HStack(spacing: 8) {
+                                ForEach(row.blocks) { block in
+                                    blockRow(block)
+                                        .frame(maxWidth: .infinity)
+                                }
+                            }
+                            .padding(.top, CGFloat(row.blocks.first?.spacingBefore ?? 0))
+                        } else if let block = row.blocks.first {
+                            blockRow(block)
+                        }
                     }
                     Spacer(minLength: 16)
                 }
@@ -182,7 +194,8 @@ struct ScreenContentView: View {
             }
         }
         .preferredColorScheme(appearance.colorScheme)
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationTitle(screen.name)
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     @ViewBuilder
@@ -196,6 +209,7 @@ struct ScreenContentView: View {
             block: block,
             appearance: appearance,
             isSelected: false,
+            isInteractive: true,
             onButtonTap: isButton && targetScreen == nil
                 ? { alertMessage = "\(block.content.isEmpty ? "Button" : block.content) tapped (no nav target set)" }
                 : nil

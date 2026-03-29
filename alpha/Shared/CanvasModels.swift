@@ -162,6 +162,7 @@ struct CanvasBlock: Identifiable {
     var borderWidth: Double = 0
     var lineSpacing: Double = 4
     var shadowRadius: Double = 0
+    var rowGroupID: UUID? = nil
 
     var outlineSummary: String {
         switch kind {
@@ -181,26 +182,6 @@ struct CanvasBlock: Identifiable {
         case .card: return content
         case .iconRow: return content
         case .mapPlaceholder: return "Map"
-        }
-    }
-
-    var selectionCornerRadius: CGFloat {
-        switch kind {
-        case .primaryButton, .secondaryButton: return CGFloat(cornerRadius + 6)
-        case .symbol: return 20
-        case .list: return 16
-        case .image, .mapPlaceholder: return CGFloat(cornerRadius + 4)
-        case .textField, .searchBar: return CGFloat(cornerRadius + 4)
-        case .toggle, .slider: return 10
-        case .avatar: return 50
-        case .badge: return CGFloat(cornerRadius + 4)
-        case .segmentedControl: return 12
-        case .progressBar: return 8
-        case .divider, .spacer: return 4
-        case .card: return CGFloat(cornerRadius + 4)
-        case .iconRow: return CGFloat(cornerRadius + 4)
-        case .linkButton, .caption: return 6
-        default: return 8
         }
     }
 
@@ -709,6 +690,7 @@ struct ExportedBlock: Codable {
     var borderWidth: Double?
     var lineSpacing: Double?
     var shadowRadius: Double?
+    var rowGroupID: String?
 }
 
 struct ColorComponents: Codable {
@@ -765,7 +747,8 @@ extension CanvasBlock {
             opacity: opacity,
             borderWidth: borderWidth,
             lineSpacing: lineSpacing,
-            shadowRadius: shadowRadius
+            shadowRadius: shadowRadius,
+            rowGroupID: rowGroupID?.uuidString
         )
     }
 }
@@ -776,6 +759,7 @@ extension CanvasBlock {
         let alignment = BlockAlignment(rawValue: exported.alignment) ?? .leading
         let weight = FontWeightOption(rawValue: exported.fontWeight) ?? .regular
         let navTarget: UUID? = exported.navigationTarget.flatMap { UUID(uuidString: $0) }
+        let rowGroup: UUID? = exported.rowGroupID.flatMap { UUID(uuidString: $0) }
 
         self.init(
             kind: kind,
@@ -796,7 +780,8 @@ extension CanvasBlock {
             opacity: exported.opacity ?? 1.0,
             borderWidth: exported.borderWidth ?? 0,
             lineSpacing: exported.lineSpacing ?? 4,
-            shadowRadius: exported.shadowRadius ?? 0
+            shadowRadius: exported.shadowRadius ?? 0,
+            rowGroupID: rowGroup
         )
     }
 }

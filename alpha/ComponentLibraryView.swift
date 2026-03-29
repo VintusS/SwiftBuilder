@@ -157,6 +157,9 @@ struct CanvasOutlineView: View {
     let selectedBlockID: CanvasBlock.ID?
     let onSelectBlock: (CanvasBlock.ID) -> Void
     var onMoveBlock: (IndexSet, Int) -> Void = { _, _ in }
+    var canMergeIntoRow: (UUID) -> Bool = { _ in false }
+    var onMergeIntoRow: (UUID) -> Void = { _ in }
+    var onRemoveFromRow: (UUID) -> Void = { _ in }
 
     @State private var draggedBlockID: CanvasBlock.ID?
 
@@ -184,6 +187,12 @@ struct CanvasOutlineView: View {
             }
         } label: {
             HStack(spacing: Spacing.sm) {
+                if block.rowGroupID != nil {
+                    Image(systemName: "square.split.1x2.fill")
+                        .font(.system(size: 8))
+                        .foregroundColor(.accentColor.opacity(0.5))
+                        .frame(width: 10)
+                }
                 Image(systemName: block.kind.iconSystemName)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(isActive ? .accentColor : .secondary)
@@ -257,6 +266,25 @@ struct CanvasOutlineView: View {
                 withAnimation { onMoveBlock(IndexSet(integer: index), index + 2) }
             }
             .disabled(index >= blocks.count - 1)
+            Divider()
+            if canMergeIntoRow(block.id) {
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        onMergeIntoRow(block.id)
+                    }
+                } label: {
+                    Label("Merge with Next into Row", systemImage: "rectangle.split.1x2")
+                }
+            }
+            if block.rowGroupID != nil {
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        onRemoveFromRow(block.id)
+                    }
+                } label: {
+                    Label("Remove from Row", systemImage: "rectangle.split.1x2.slash")
+                }
+            }
         }
     }
 

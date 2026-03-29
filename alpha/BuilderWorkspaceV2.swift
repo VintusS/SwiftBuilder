@@ -110,7 +110,10 @@ struct BuilderWorkspaceV2: View {
                         blocks: store.currentBlocks,
                         selectedBlockID: store.selectedBlockID,
                         onSelectBlock: { id in store.selectedBlockID = id },
-                        onMoveBlock: { source, dest in store.moveBlock(from: source, to: dest) }
+                        onMoveBlock: { source, dest in store.moveBlock(from: source, to: dest) },
+                        canMergeIntoRow: { id in store.canMergeIntoRow(blockID: id) },
+                        onMergeIntoRow: { id in store.mergeIntoRow(blockID: id) },
+                        onRemoveFromRow: { id in store.removeFromRow(blockID: id) }
                     )
                 }
             }

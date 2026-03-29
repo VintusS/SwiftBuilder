@@ -1,10 +1,10 @@
-# Alpha — Visual iOS App Builder
+# SwiftBuilder — Visual iOS App Builder
 
 ## Overview
 
-**Alpha** is a native macOS application that enables users to visually design multi-screen iOS app prototypes through a no-code drag-and-compose interface. Built entirely in Swift and SwiftUI with zero external dependencies, it targets designers, students, and rapid prototypers who want to go from idea to interactive prototype without writing code.
+**SwiftBuilder** is a native macOS application that enables users to visually design multi-screen iOS app prototypes through a no-code drag-and-compose interface. Built entirely in Swift and SwiftUI with zero external dependencies, it targets designers, students, and rapid prototypers who want to go from idea to interactive prototype without writing code.
 
-The tool operates as a dual-target Xcode project: a **macOS builder** (`alpha`) where screens are composed and customized, and an **iOS runner** (`PreviewRunner`) that renders the exported prototype on a real device or simulator with full navigation.
+The tool operates as a dual-target Xcode project: a **macOS builder** (`SwiftBuilder`) where screens are composed and customized, and an **iOS runner** (`PreviewRunner`) that renders the exported prototype on a real device or simulator with full navigation.
 
 ---
 
@@ -14,7 +14,7 @@ The tool operates as a dual-target Xcode project: a **macOS builder** (`alpha`) 
 
 | Target | Platform | Role |
 |--------|----------|------|
-| `alpha` | macOS | The visual builder IDE — compose screens, customize properties, preview on device frames, export code |
+| `SwiftBuilder` | macOS | The visual builder IDE — compose screens, customize properties, preview on device frames, export code |
 | `PreviewRunner` | iOS | Lightweight runner app that loads an exported JSON project and renders it as a live, navigable prototype |
 
 Both targets share code through a `Shared/` folder containing `CanvasModels.swift` (all data models, enums, export/import logic) and `CanvasViews.swift` (device preview chrome and component rendering).
@@ -70,7 +70,7 @@ The builder window (minimum 1080×700) is divided into four zones:
 
 The top toolbar uses an ultra-thin material backdrop and is divided into three zones:
 
-- **Left zone**: App title "alpha" in bold rounded 18pt, followed by a pill divider, then an editable project name field (160pt wide).
+- **Left zone**: App title "SwiftBuilder" in bold rounded 18pt, followed by a pill divider, then an editable project name field (160pt wide).
 - **Center zone**: Device picker (dropdown menu, 180pt), Appearance segmented picker (Light / Dark, 200pt), zoom slider (65%–135% with magnifying glass icons and percentage readout).
 - **Right zone**: More actions menu (Reset Canvas, Run Preview Guide), Save button, Export Code button, and a prominent Run button that shows a spinner while building.
 
@@ -106,7 +106,7 @@ The inspector panel shows property controls for the currently selected block, or
 
 ## Component Types (21)
 
-Alpha provides 21 UI component types organized into 6 categories:
+SwiftBuilder provides 21 UI component types organized into 6 categories:
 
 ### Text (4)
 | Component | Description | Default Template |

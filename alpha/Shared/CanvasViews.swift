@@ -1,5 +1,34 @@
 import SwiftUI
 
+struct BlockRow: Identifiable {
+    let id: UUID
+    let blocks: [CanvasBlock]
+
+    var isGrouped: Bool { blocks.count > 1 }
+
+    static func group(_ blocks: [CanvasBlock]) -> [BlockRow] {
+        var rows: [BlockRow] = []
+        var i = 0
+        while i < blocks.count {
+            let block = blocks[i]
+            if let gid = block.rowGroupID {
+                var grouped = [block]
+                var j = i + 1
+                while j < blocks.count, blocks[j].rowGroupID == gid {
+                    grouped.append(blocks[j])
+                    j += 1
+                }
+                rows.append(BlockRow(id: gid, blocks: grouped))
+                i = j
+            } else {
+                rows.append(BlockRow(id: block.id, blocks: [block]))
+                i += 1
+            }
+        }
+        return rows
+    }
+}
+
 struct DevicePreview: View {
     let device: DevicePreset
     let appearance: PreviewAppearance
@@ -102,18 +131,36 @@ struct DevicePreview: View {
         if blocks.isEmpty {
             emptyCanvasState
         } else {
+            let rows = BlockRow.group(blocks)
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(blocks) { block in
-                        CanvasBlockView(
-                            block: block,
-                            appearance: appearance,
-                            isSelected: block.id == selectedID
-                        )
-                        .padding(.top, CGFloat(block.spacingBefore))
-                        .id(block.id)
-                        .onTapGesture { onSelect(block.id) }
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    ForEach(rows) { row in
+                        if row.isGrouped {
+                            HStack(spacing: 8) {
+                                ForEach(row.blocks) { block in
+                                    CanvasBlockView(
+                                        block: block,
+                                        appearance: appearance,
+                                        isSelected: block.id == selectedID
+                                    )
+                                    .frame(maxWidth: .infinity)
+                                    .id(block.id)
+                                    .onTapGesture { onSelect(block.id) }
+                                }
+                            }
+                            .padding(.top, CGFloat(row.blocks.first?.spacingBefore ?? 0))
+                            .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                        } else if let block = row.blocks.first {
+                            CanvasBlockView(
+                                block: block,
+                                appearance: appearance,
+                                isSelected: block.id == selectedID
+                            )
+                            .padding(.top, CGFloat(block.spacingBefore))
+                            .id(block.id)
+                            .onTapGesture { onSelect(block.id) }
+                            .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                        }
                     }
                     Spacer(minLength: 16)
                 }
@@ -281,12 +328,18 @@ struct CanvasBlockView: View {
     let block: CanvasBlock
     let appearance: PreviewAppearance
     let isSelected: Bool
+    var isInteractive: Bool = false
     var onButtonTap: (() -> Void)? = nil
 
     @State private var isHovered = false
+    @State private var textFieldValue: String = ""
+    @State private var searchFieldValue: String = ""
+    @State private var toggleIsOn: Bool = false
+    @State private var selectedSegment: Int = 0
+    @State private var sliderValue: Double = 0.5
 
     var body: some View {
-        SelectionOutline(isActive: isSelected, isHovered: isHovered, cornerRadius: block.selectionCornerRadius) {
+        SelectionOutline(isActive: isSelected, isHovered: isHovered) {
             buildContent()
         }
         .contentShape(Rectangle())
@@ -313,7 +366,7 @@ struct CanvasBlockView: View {
 
         if block.borderWidth > 0 && !hasInternalBorder {
             rendered.overlay(
-                RoundedRectangle(cornerRadius: block.selectionCornerRadius - 2, style: .continuous)
+                RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius), style: .continuous)
                     .stroke(block.textColor.opacity(0.5), lineWidth: CGFloat(block.borderWidth))
             )
         } else {
@@ -503,10 +556,19 @@ struct CanvasBlockView: View {
             let placeholderColor = block.textColor.ensuringContrast(in: appearance, minimumLuminance: 0.55)
             let bgColor = block.fillColor.ensuringContrast(in: appearance, minimumLuminance: 0.88)
             HStack {
-                Text(block.content)
-                    .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
-                    .foregroundColor(placeholderColor)
-                Spacer()
+                if isInteractive {
+                    TextField(block.content, text: $textFieldValue)
+                        .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
+                        .foregroundColor(.primary)
+                        #if os(iOS)
+                        .textFieldStyle(.plain)
+                        #endif
+                } else {
+                    Text(block.content)
+                        .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
+                        .foregroundColor(placeholderColor)
+                    Spacer()
+                }
             }
             .padding(.horizontal, CGFloat(block.horizontalPadding))
             .padding(.vertical, CGFloat(block.verticalPadding))
@@ -523,23 +585,27 @@ struct CanvasBlockView: View {
         case .toggle:
             let labelColor = block.textColor.ensuringContrast(in: appearance, minimumLuminance: 0.75)
             let tintColor = block.fillColor.ensuringContrast(in: appearance, minimumLuminance: 0.4)
-            HStack {
-                Text(block.content)
-                    .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
-                    .foregroundColor(labelColor)
-                Spacer()
+            if isInteractive {
+                Toggle(isOn: $toggleIsOn) {
+                    Text(block.content)
+                        .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
+                        .foregroundColor(labelColor)
+                }
+                .toggleStyle(.switch)
+                .tint(tintColor)
+                .frame(maxWidth: .infinity)
+                .onAppear { toggleIsOn = block.symbolScale >= 0.5 }
+            } else {
                 let isOn = block.symbolScale >= 0.5
-                Capsule()
-                    .fill(isOn ? tintColor : Color.secondary.opacity(0.3))
-                    .frame(width: 51, height: 31)
-                    .overlay(
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 27, height: 27)
-                            .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
-                            .offset(x: isOn ? 10 : -10),
-                        alignment: isOn ? .trailing : .leading
-                    )
+                Toggle(isOn: .constant(isOn)) {
+                    Text(block.content)
+                        .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
+                        .foregroundColor(labelColor)
+                }
+                .toggleStyle(.switch)
+                .tint(tintColor)
+                .frame(maxWidth: .infinity)
+                .allowsHitTesting(false)
             }
 
         case .divider:
@@ -557,52 +623,82 @@ struct CanvasBlockView: View {
         case .segmentedControl:
             let bgColor = block.fillColor.ensuringContrast(in: appearance, minimumLuminance: 0.88)
             let textColor = block.textColor.ensuringContrast(in: appearance, minimumLuminance: 0.75)
-            let selectedIdx = max(0, min(Int(block.symbolScale), block.listItems.count - 1))
+            let activeIdx = isInteractive ? selectedSegment : max(0, min(Int(block.symbolScale), block.listItems.count - 1))
             HStack(spacing: 0) {
                 ForEach(Array(block.listItems.enumerated()), id: \.offset) { index, label in
                     Text(label)
-                        .font(.system(size: CGFloat(block.fontSize), weight: index == selectedIdx ? .semibold : block.fontWeight.weight, design: .rounded))
+                        .font(.system(size: CGFloat(block.fontSize), weight: index == activeIdx ? .semibold : block.fontWeight.weight, design: .rounded))
                         .foregroundColor(textColor)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, CGFloat(max(block.verticalPadding, 8)))
                         .background(
                             RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius) - 1, style: .continuous)
-                                .fill(index == selectedIdx ? Color.white : Color.clear)
-                                .shadow(color: index == selectedIdx ? .black.opacity(0.08) : .clear, radius: 2, y: 1)
+                                .fill(index == activeIdx ? Color.white : Color.clear)
+                                .shadow(color: index == activeIdx ? .black.opacity(0.08) : .clear, radius: 2, y: 1)
                         )
                         .padding(2)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            if isInteractive {
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                    selectedSegment = index
+                                }
+                            }
+                        }
                 }
             }
             .background(
                 RoundedRectangle(cornerRadius: CGFloat(block.cornerRadius), style: .continuous)
                     .fill(bgColor)
             )
+            .onAppear {
+                selectedSegment = max(0, min(Int(block.symbolScale), block.listItems.count - 1))
+            }
 
         case .slider:
             let labelColor = block.textColor.ensuringContrast(in: appearance, minimumLuminance: 0.75)
             let tintColor = block.fillColor.ensuringContrast(in: appearance, minimumLuminance: 0.4)
-            let progress = min(max(block.symbolScale, 0), 1)
-            VStack(alignment: .leading, spacing: 8) {
-                if !block.content.isEmpty {
-                    HStack {
-                        Text(block.content)
-                            .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
-                            .foregroundColor(labelColor)
-                        Spacer()
-                        Text("\(Int(progress * 100))%")
-                            .font(.system(size: CGFloat(block.fontSize) - 2, design: .rounded))
-                            .foregroundColor(labelColor.opacity(0.6))
+            if isInteractive {
+                VStack(alignment: .leading, spacing: 8) {
+                    if !block.content.isEmpty {
+                        HStack {
+                            Text(block.content)
+                                .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
+                                .foregroundColor(labelColor)
+                            Spacer()
+                            Text("\(Int(sliderValue * 100))%")
+                                .font(.system(size: CGFloat(block.fontSize) - 2, design: .rounded))
+                                .foregroundColor(labelColor.opacity(0.6))
+                        }
                     }
+                    Slider(value: $sliderValue, in: 0...1)
+                        .tint(tintColor)
                 }
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color.secondary.opacity(0.2))
-                        Capsule().fill(tintColor)
-                            .frame(width: max(geo.size.width * progress, 6))
+                .onAppear { sliderValue = min(max(block.symbolScale, 0), 1) }
+            } else {
+                let progress = min(max(block.symbolScale, 0), 1)
+                VStack(alignment: .leading, spacing: 8) {
+                    if !block.content.isEmpty {
+                        HStack {
+                            Text(block.content)
+                                .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
+                                .foregroundColor(labelColor)
+                            Spacer()
+                            Text("\(Int(progress * 100))%")
+                                .font(.system(size: CGFloat(block.fontSize) - 2, design: .rounded))
+                                .foregroundColor(labelColor.opacity(0.6))
+                        }
                     }
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Color.secondary.opacity(0.2))
+                            Capsule().fill(tintColor)
+                                .frame(width: max(geo.size.width * progress, 6))
+                        }
+                    }
+                    .frame(height: max(6, CGFloat(block.verticalPadding > 0 ? block.verticalPadding : 6)))
+                    .clipShape(Capsule())
                 }
-                .frame(height: max(6, CGFloat(block.verticalPadding > 0 ? block.verticalPadding : 6)))
-                .clipShape(Capsule())
             }
 
         case .avatar:
@@ -646,10 +742,19 @@ struct CanvasBlockView: View {
                 Image(systemName: block.symbolName.isEmpty ? "magnifyingglass" : block.symbolName)
                     .foregroundColor(placeholderColor)
                     .font(.system(size: CGFloat(block.fontSize) - 1))
-                Text(block.content)
-                    .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
-                    .foregroundColor(placeholderColor)
-                Spacer()
+                if isInteractive {
+                    TextField(block.content, text: $searchFieldValue)
+                        .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
+                        .foregroundColor(.primary)
+                        #if os(iOS)
+                        .textFieldStyle(.plain)
+                        #endif
+                } else {
+                    Text(block.content)
+                        .font(.system(size: CGFloat(block.fontSize), weight: block.fontWeight.weight, design: .rounded))
+                        .foregroundColor(placeholderColor)
+                    Spacer()
+                }
             }
             .padding(.horizontal, CGFloat(block.horizontalPadding))
             .padding(.vertical, CGFloat(block.verticalPadding))
@@ -766,35 +871,40 @@ struct CanvasBlockView: View {
 struct SelectionOutline<Content: View>: View {
     let isActive: Bool
     let isHovered: Bool
-    let cornerRadius: CGFloat
     let content: Content
 
-    init(isActive: Bool, isHovered: Bool = false, cornerRadius: CGFloat, @ViewBuilder content: () -> Content) {
+    private let outlineRadius: CGFloat = 8
+
+    init(isActive: Bool, isHovered: Bool = false, @ViewBuilder content: () -> Content) {
         self.isActive = isActive
         self.isHovered = isHovered
-        self.cornerRadius = cornerRadius
         self.content = content()
-    }
-
-    private var strokeColor: Color {
-        if isActive { return Color.accentColor }
-        if isHovered { return Color.accentColor.opacity(0.35) }
-        return Color.clear
-    }
-
-    private var strokeWidth: CGFloat {
-        if isActive { return 2 }
-        if isHovered { return 1.5 }
-        return 0
     }
 
     var body: some View {
         content
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(strokeColor, lineWidth: strokeWidth)
-            )
+            .background(backgroundTint)
+            .overlay(borderOverlay)
             .animation(.easeInOut(duration: 0.15), value: isActive)
             .animation(.easeInOut(duration: 0.12), value: isHovered)
+    }
+
+    @ViewBuilder
+    private var backgroundTint: some View {
+        if isActive {
+            RoundedRectangle(cornerRadius: outlineRadius, style: .continuous)
+                .fill(Color.accentColor.opacity(0.04))
+        }
+    }
+
+    @ViewBuilder
+    private var borderOverlay: some View {
+        if isActive {
+            RoundedRectangle(cornerRadius: outlineRadius, style: .continuous)
+                .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [6, 3]))
+        } else if isHovered {
+            RoundedRectangle(cornerRadius: outlineRadius, style: .continuous)
+                .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
+        }
     }
 }

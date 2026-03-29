@@ -114,7 +114,7 @@ class SimulatorLauncher {
                 }
                 
                 await MainActor.run { onProgress("Building PreviewRunner...") }
-                let appPath = try await self.buildApp(projectPath: projectPath, simulatorUDID: simulatorUDID, simulatorName: actualName ?? simulatorName)
+                let appPath = try await self.buildApp(projectPath: projectPath, simulatorUDID: simulatorUDID, simulatorName: actualName ?? simulatorName, projectName: projectName)
                 
                 await MainActor.run { onProgress("Installing app...") }
                 try await self.installApp(simulatorUDID: simulatorUDID, appPath: appPath)
@@ -569,13 +569,14 @@ class SimulatorLauncher {
     
     // MARK: - Build & Install
     
-    private func buildApp(projectPath: String, simulatorUDID: String, simulatorName: String) async throws -> String {
+    private func buildApp(projectPath: String, simulatorUDID: String, simulatorName: String, projectName: String) async throws -> String {
         let outputDir = NSTemporaryDirectory() + "AlphaPreviewRunnerBuild"
         let expectedApp = "\(outputDir)/PreviewRunner.app"
         let logFile = NSTemporaryDirectory() + "AlphaPreviewRunnerBuild.log"
         let developerDir = getDeveloperDirectory() ?? "/Applications/Xcode.app/Contents/Developer"
         let xcodebuildPath = findXcodebuildPath()
         
+        let sanitizedDisplayName = projectName.replacingOccurrences(of: "\"", with: "")
         let scriptPath = (projectPath as NSString).appendingPathComponent("_build_preview.sh")
         let script = """
         #!/bin/bash
@@ -591,6 +592,7 @@ class SimulatorLauncher {
             "CONFIGURATION_BUILD_DIR=$OUTPUT_DIR" \
             "OBJROOT=$OUTPUT_DIR/Intermediates" \
             "SYMROOT=$OUTPUT_DIR/Products" \
+            "INFOPLIST_KEY_CFBundleDisplayName=\(sanitizedDisplayName)" \
             clean build > "\(logFile)" 2>&1
         if [ -d "$OUTPUT_DIR/PreviewRunner.app" ]; then
             exit 0

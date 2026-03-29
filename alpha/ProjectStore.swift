@@ -203,6 +203,64 @@ class ProjectStore {
         registerUndo(actionName: "Move", before: before)
     }
 
+    // MARK: - Row Grouping
+
+    func canMergeIntoRow(blockID: UUID) -> Bool {
+        guard let screenIdx = currentScreenIndex,
+              let idx = screens[screenIdx].blocks.firstIndex(where: { $0.id == blockID }),
+              idx + 1 < screens[screenIdx].blocks.count
+        else { return false }
+
+        let block = screens[screenIdx].blocks[idx]
+        let next = screens[screenIdx].blocks[idx + 1]
+
+        if let gid = block.rowGroupID {
+            let groupCount = screens[screenIdx].blocks.filter { $0.rowGroupID == gid }.count
+            if groupCount >= 3 { return false }
+            if next.rowGroupID == gid { return false }
+        }
+        if let gid = next.rowGroupID {
+            let groupCount = screens[screenIdx].blocks.filter { $0.rowGroupID == gid }.count
+            if groupCount >= 3 { return false }
+        }
+        return true
+    }
+
+    func mergeIntoRow(blockID: UUID) {
+        guard let screenIdx = currentScreenIndex,
+              let idx = screens[screenIdx].blocks.firstIndex(where: { $0.id == blockID }),
+              idx + 1 < screens[screenIdx].blocks.count
+        else { return }
+        let before = snapshot()
+
+        let existingGroupID = screens[screenIdx].blocks[idx].rowGroupID
+            ?? screens[screenIdx].blocks[idx + 1].rowGroupID
+        let groupID = existingGroupID ?? UUID()
+
+        screens[screenIdx].blocks[idx].rowGroupID = groupID
+        screens[screenIdx].blocks[idx + 1].rowGroupID = groupID
+
+        registerUndo(actionName: "Merge into Row", before: before)
+    }
+
+    func removeFromRow(blockID: UUID) {
+        guard let screenIdx = currentScreenIndex,
+              let idx = screens[screenIdx].blocks.firstIndex(where: { $0.id == blockID }),
+              screens[screenIdx].blocks[idx].rowGroupID != nil
+        else { return }
+        let before = snapshot()
+
+        let gid = screens[screenIdx].blocks[idx].rowGroupID!
+        screens[screenIdx].blocks[idx].rowGroupID = nil
+
+        let remaining = screens[screenIdx].blocks.filter { $0.rowGroupID == gid }
+        if remaining.count == 1, let lastIdx = screens[screenIdx].blocks.firstIndex(where: { $0.rowGroupID == gid }) {
+            screens[screenIdx].blocks[lastIdx].rowGroupID = nil
+        }
+
+        registerUndo(actionName: "Remove from Row", before: before)
+    }
+
     // MARK: - Export
 
     func buildProject() -> BuilderProject {
