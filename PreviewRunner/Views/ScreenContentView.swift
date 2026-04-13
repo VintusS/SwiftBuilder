@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftBuilderComponents
 
 struct ScreenContentView: View {
     let screen: Screen

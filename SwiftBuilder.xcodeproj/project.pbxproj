@@ -11,33 +11,9 @@
 		71B8760F2EA4492E009CC665 /* PreviewRunner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PreviewRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		71F4A2002F22E00000AB1234 /* Exceptions for "SwiftBuilder" folder in "PreviewRunner" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Components/Atoms/BlockRow.swift",
-				"Components/Atoms/SelectionOutline.swift",
-				"Components/Molecules/CanvasBlockView.swift",
-				"Core/Export/CanvasBlock+Export.swift",
-				"Core/Export/ExportModels.swift",
-				"Core/Extensions/Color+Utilities.swift",
-				"Core/Models/BlockAlignment.swift",
-				"Core/Models/CanvasBlock.swift",
-				"Core/Models/DevicePreset.swift",
-				"Core/Models/FontWeightOption.swift",
-				"Core/Models/PreviewAppearance.swift",
-				"Core/Models/Screen.swift",
-			);
-			target = 71B8760E2EA4492E009CC665 /* PreviewRunner */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		712DC3CF2E931A5000AE353E /* SwiftBuilder */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				71F4A2002F22E00000AB1234 /* Exceptions for "SwiftBuilder" folder in "PreviewRunner" target */,
-			);
 			path = SwiftBuilder;
 			sourceTree = "<group>";
 		};
@@ -104,6 +80,7 @@
 			);
 			name = SwiftBuilder;
 			packageProductDependencies = (
+				71COMP0022F33000000AB5678 /* SwiftBuilderComponents */,
 			);
 			productName = SwiftBuilder;
 			productReference = 712DC3CD2E931A5000AE353E /* SwiftBuilder.app */;
@@ -126,6 +103,7 @@
 			);
 			name = PreviewRunner;
 			packageProductDependencies = (
+				71COMP0032F33000000AB5678 /* SwiftBuilderComponents */,
 			);
 			productName = PreviewRunner;
 			productReference = 71B8760F2EA4492E009CC665 /* PreviewRunner.app */;
@@ -162,6 +140,9 @@
 			productRefGroup = 712DC3CE2E931A5000AE353E /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
+			packages = (
+				71COMP0012F33000000AB5678 /* XCLocalSwiftPackageReference "SwiftBuilderComponents" */,
+			);
 			targets = (
 				712DC3CC2E931A5000AE353E /* SwiftBuilder */,
 				71B8760E2EA4492E009CC665 /* PreviewRunner */,
@@ -496,6 +477,24 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		71COMP0012F33000000AB5678 /* XCLocalSwiftPackageReference "SwiftBuilderComponents" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../SwiftBuilderComponents;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		71COMP0022F33000000AB5678 /* SwiftBuilderComponents */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SwiftBuilderComponents;
+		};
+		71COMP0032F33000000AB5678 /* SwiftBuilderComponents */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SwiftBuilderComponents;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 712DC3C52E931A5000AE353E /* Project object */;
 }

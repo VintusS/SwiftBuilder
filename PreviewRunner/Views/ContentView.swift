@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftBuilderComponents
 
 struct ContentView: View {
     @State private var project: BuilderProject?

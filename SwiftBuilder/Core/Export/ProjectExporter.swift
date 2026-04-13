@@ -1,4 +1,5 @@
 import Foundation
+import SwiftBuilderComponents
 
 struct ProjectExporter {
     func export(_ project: BuilderProject, to url: URL) throws {

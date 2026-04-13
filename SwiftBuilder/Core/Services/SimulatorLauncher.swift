@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftBuilderComponents
 #if os(macOS)
 import AppKit
 #endif

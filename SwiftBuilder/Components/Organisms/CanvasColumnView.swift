@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftBuilderComponents
 
 struct CanvasColumnView: View {
     let theme: WorkspaceTheme

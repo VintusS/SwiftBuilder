@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftBuilderComponents
 
 struct TemplateCard: View {
     let template: ScreenTemplate

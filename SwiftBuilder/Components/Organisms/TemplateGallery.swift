@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftBuilderComponents
 
 struct TemplateGallery: View {
     let onSelect: (Screen) -> Void

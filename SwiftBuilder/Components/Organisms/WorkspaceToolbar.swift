@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftBuilderComponents
 
 struct WorkspaceToolbar: View {
     @Binding var projectName: String

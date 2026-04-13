@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftBuilderComponents
 import UniformTypeIdentifiers
 #if os(macOS)
 import AppKit

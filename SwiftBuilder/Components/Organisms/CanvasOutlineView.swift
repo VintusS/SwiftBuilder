@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftBuilderComponents
 
 struct CanvasOutlineView: View {
     let theme: WorkspaceTheme

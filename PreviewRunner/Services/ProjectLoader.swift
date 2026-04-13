@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftBuilderComponents
 
 struct ProjectLoader {
     static func loadLatestWithSource() throws -> (BuilderProject, String) {

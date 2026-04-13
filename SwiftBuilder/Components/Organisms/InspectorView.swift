@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftBuilderComponents
 
 struct InspectorView: View {
     let binding: Binding<CanvasBlock>?

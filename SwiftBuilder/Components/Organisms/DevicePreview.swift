@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftBuilderComponents
 
 struct DevicePreview: View {
     let device: DevicePreset

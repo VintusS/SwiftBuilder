@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftBuilderComponents
 
 struct ComponentLibraryView: View {
     @Environment(\.colorScheme) private var colorScheme
