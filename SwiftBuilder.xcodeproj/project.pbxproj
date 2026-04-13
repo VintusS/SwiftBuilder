@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		7165BF282F8D21E90058B14F /* SwiftBuilderComponents in Frameworks */ = {isa = PBXBuildFile; productRef = 71COMP0022F33000000AB5678 /* SwiftBuilderComponents */; };
+		7165BF292F8D21E90058B14F /* SwiftBuilderComponents in Frameworks */ = {isa = PBXBuildFile; productRef = 71COMP0032F33000000AB5678 /* SwiftBuilderComponents */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		712DC3CD2E931A5000AE353E /* SwiftBuilder.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SwiftBuilder.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		71B8760F2EA4492E009CC665 /* PreviewRunner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PreviewRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -29,6 +34,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7165BF282F8D21E90058B14F /* SwiftBuilderComponents in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -36,6 +42,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7165BF292F8D21E90058B14F /* SwiftBuilderComponents in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -136,13 +143,13 @@
 			);
 			mainGroup = 712DC3C42E931A5000AE353E;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7165BF792F8D22280058B14F /* XCLocalSwiftPackageReference "../SwiftBuilderComponents" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 712DC3CE2E931A5000AE353E /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
-			packages = (
-				71COMP0012F33000000AB5678 /* XCLocalSwiftPackageReference "SwiftBuilderComponents" */,
-			);
 			targets = (
 				712DC3CC2E931A5000AE353E /* SwiftBuilder */,
 				71B8760E2EA4492E009CC665 /* PreviewRunner */,
@@ -479,7 +486,11 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		71COMP0012F33000000AB5678 /* XCLocalSwiftPackageReference "SwiftBuilderComponents" */ = {
+		7165BF792F8D22280058B14F /* XCLocalSwiftPackageReference "../SwiftBuilderComponents" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../SwiftBuilderComponents;
+		};
+		71COMP0012F33000000AB5678 /* XCLocalSwiftPackageReference "../SwiftBuilderComponents" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../SwiftBuilderComponents;
 		};
@@ -488,10 +499,12 @@
 /* Begin XCSwiftPackageProductDependency section */
 		71COMP0022F33000000AB5678 /* SwiftBuilderComponents */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 71COMP0012F33000000AB5678 /* XCLocalSwiftPackageReference "../SwiftBuilderComponents" */;
 			productName = SwiftBuilderComponents;
 		};
 		71COMP0032F33000000AB5678 /* SwiftBuilderComponents */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 71COMP0012F33000000AB5678 /* XCLocalSwiftPackageReference "../SwiftBuilderComponents" */;
 			productName = SwiftBuilderComponents;
 		};
 /* End XCSwiftPackageProductDependency section */
