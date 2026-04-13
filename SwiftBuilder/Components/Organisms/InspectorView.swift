@@ -1,6 +1,6 @@
 //
 //  InspectorView.swift
-//  alpha
+//  SwiftBuilder
 //
 
 import SwiftUI

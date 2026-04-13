@@ -182,10 +182,59 @@ struct CanvasBlock: Identifiable {
 
     static func starter() -> [CanvasBlock] {
         [
-            CanvasBlock.template(for: .symbol),
-            CanvasBlock.template(for: .heroTitle),
-            CanvasBlock.template(for: .bodyText),
-            CanvasBlock.template(for: .primaryButton)
+            CanvasBlock(
+                kind: .heroTitle, content: "Good Morning", symbolName: "", alignment: .leading,
+                fontSize: 32, fontWeight: .bold,
+                textColor: Color(red: 0.10, green: 0.12, blue: 0.20), fillColor: .clear,
+                spacingBefore: 8, horizontalPadding: 0, verticalPadding: 0,
+                cornerRadius: 0, symbolScale: 1, listItems: []),
+            CanvasBlock(
+                kind: .bodyText, content: "Here's what's happening today.", symbolName: "", alignment: .leading,
+                fontSize: 16, fontWeight: .regular,
+                textColor: Color(red: 0.45, green: 0.47, blue: 0.54), fillColor: .clear,
+                spacingBefore: 6, horizontalPadding: 0, verticalPadding: 0,
+                cornerRadius: 0, symbolScale: 1, listItems: []),
+            CanvasBlock(
+                kind: .searchBar, content: "Search...", symbolName: "magnifyingglass",
+                alignment: .leading, fontSize: 16, fontWeight: .regular,
+                textColor: Color(red: 0.60, green: 0.60, blue: 0.64),
+                fillColor: Color(red: 0.95, green: 0.95, blue: 0.97),
+                spacingBefore: 18, horizontalPadding: 12, verticalPadding: 10,
+                cornerRadius: 10, symbolScale: 1, listItems: []),
+            CanvasBlock(
+                kind: .card, content: "Getting Started", symbolName: "bolt.fill",
+                alignment: .leading, fontSize: 17, fontWeight: .semibold,
+                textColor: Color(red: 0.15, green: 0.17, blue: 0.28),
+                fillColor: Color(red: 0.97, green: 0.97, blue: 0.98),
+                spacingBefore: 18, horizontalPadding: 16, verticalPadding: 14,
+                cornerRadius: 16, symbolScale: 1,
+                listItems: ["Complete your profile to unlock all features."]),
+            CanvasBlock(
+                kind: .caption, content: "SETTINGS", symbolName: "", alignment: .leading,
+                fontSize: 11, fontWeight: .semibold,
+                textColor: Color(red: 0.45, green: 0.47, blue: 0.54), fillColor: .clear,
+                spacingBefore: 22, horizontalPadding: 4, verticalPadding: 0,
+                cornerRadius: 0, symbolScale: 1, listItems: []),
+            CanvasBlock(
+                kind: .iconRow, content: "Account", symbolName: "person.fill",
+                alignment: .leading, fontSize: 16, fontWeight: .regular,
+                textColor: Color(red: 0.15, green: 0.17, blue: 0.28),
+                fillColor: Color(red: 0.29, green: 0.56, blue: 0.96),
+                spacingBefore: 8, horizontalPadding: 16, verticalPadding: 12,
+                cornerRadius: 12, symbolScale: 1, listItems: [""]),
+            CanvasBlock(
+                kind: .toggle, content: "Notifications", symbolName: "", alignment: .leading,
+                fontSize: 16, fontWeight: .regular,
+                textColor: Color(red: 0.15, green: 0.17, blue: 0.28),
+                fillColor: Color(red: 0.34, green: 0.80, blue: 0.46),
+                spacingBefore: 12, horizontalPadding: 0, verticalPadding: 0,
+                cornerRadius: 0, symbolScale: 1, listItems: []),
+            CanvasBlock(
+                kind: .primaryButton, content: "Continue", symbolName: "", alignment: .center,
+                fontSize: 18, fontWeight: .semibold, textColor: .white,
+                fillColor: Color(red: 0.29, green: 0.46, blue: 0.96),
+                spacingBefore: 24, horizontalPadding: 20, verticalPadding: 14,
+                cornerRadius: 16, symbolScale: 1, listItems: []),
         ]
     }
 

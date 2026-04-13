@@ -1,6 +1,6 @@
 //
 //  ProjectStore.swift
-//  alpha
+//  SwiftBuilder
 //
 
 import SwiftUI
@@ -384,14 +384,14 @@ Try building manually:
     func getProjectPath() -> String? {
         let fileManager = FileManager.default
         let sourceFile = #file
-        let alphaSubdir = (sourceFile as NSString).deletingLastPathComponent
-        let candidateRoot = (alphaSubdir as NSString).deletingLastPathComponent
-        if fileManager.fileExists(atPath: (candidateRoot as NSString).appendingPathComponent("alpha.xcodeproj")) {
+        let sourceSubdir = (sourceFile as NSString).deletingLastPathComponent
+        let candidateRoot = (sourceSubdir as NSString).deletingLastPathComponent
+        if fileManager.fileExists(atPath: (candidateRoot as NSString).appendingPathComponent("SwiftBuilder.xcodeproj")) {
             return candidateRoot
         }
         var searchPath = fileManager.currentDirectoryPath
         for _ in 0..<10 {
-            let projectPath = (searchPath as NSString).appendingPathComponent("alpha.xcodeproj")
+            let projectPath = (searchPath as NSString).appendingPathComponent("SwiftBuilder.xcodeproj")
             if fileManager.fileExists(atPath: projectPath) { return searchPath }
             let parent = (searchPath as NSString).deletingLastPathComponent
             if parent == searchPath || parent == "/" { break }
@@ -400,7 +400,7 @@ Try building manually:
         if let bundlePath = Bundle.main.bundlePath as String? {
             var checkPath = (bundlePath as NSString).deletingLastPathComponent
             for _ in 0..<5 {
-                let projectPath = (checkPath as NSString).appendingPathComponent("alpha.xcodeproj")
+                let projectPath = (checkPath as NSString).appendingPathComponent("SwiftBuilder.xcodeproj")
                 if fileManager.fileExists(atPath: projectPath) { return checkPath }
                 let parent = (checkPath as NSString).deletingLastPathComponent
                 if parent == checkPath || parent == "/" { break }
@@ -409,13 +409,13 @@ Try building manually:
         }
         let homeDir = NSHomeDirectory()
         let commonPaths = [
-            (homeDir as NSString).appendingPathComponent("Desktop/University/Thesis/Old folder Thesis Project/alpha"),
+            (homeDir as NSString).appendingPathComponent("Desktop/University/Thesis/Old folder Thesis Project/SwiftBuilder"),
             homeDir,
             (homeDir as NSString).appendingPathComponent("Desktop"),
             (homeDir as NSString).appendingPathComponent("Documents")
         ]
         for basePath in commonPaths {
-            let projectPath = (basePath as NSString).appendingPathComponent("alpha.xcodeproj")
+            let projectPath = (basePath as NSString).appendingPathComponent("SwiftBuilder.xcodeproj")
             if fileManager.fileExists(atPath: projectPath) { return basePath }
         }
         return nil

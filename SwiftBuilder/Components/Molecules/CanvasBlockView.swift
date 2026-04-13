@@ -15,13 +15,17 @@ struct CanvasBlockView: View {
     @State private var sliderValue: Double = 0.5
 
     var body: some View {
-        SelectionOutline(isActive: isSelected, isHovered: isHovered) {
+        if isInteractive {
             buildContent()
-        }
-        .contentShape(Rectangle())
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.12)) {
-                isHovered = hovering
+        } else {
+            SelectionOutline(isActive: isSelected, isHovered: isHovered) {
+                buildContent()
+            }
+            .contentShape(Rectangle())
+            .onHover { hovering in
+                withAnimation(.easeInOut(duration: 0.12)) {
+                    isHovered = hovering
+                }
             }
         }
     }

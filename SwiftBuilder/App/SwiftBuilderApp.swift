@@ -1,6 +1,6 @@
 //
-//  alphaApp.swift
-//  alpha
+//  SwiftBuilderApp.swift
+//  SwiftBuilder
 //
 //  Created by Dragomir Mindrescu on 06.10.2025.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct alphaApp: App {
+struct SwiftBuilderApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()

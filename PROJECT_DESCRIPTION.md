@@ -17,7 +17,7 @@ The tool operates as a dual-target Xcode project: a **macOS builder** (`SwiftBui
 | `SwiftBuilder` | macOS | The visual builder IDE — compose screens, customize properties, preview on device frames, export code |
 | `PreviewRunner` | iOS | Lightweight runner app that loads an exported JSON project and renders it as a live, navigable prototype |
 
-Both targets share code through a `Shared/` folder containing `CanvasModels.swift` (all data models, enums, export/import logic) and `CanvasViews.swift` (device preview chrome and component rendering).
+Both targets share code through the `SwiftBuilder/Core/` and `SwiftBuilder/Components/` folders, which contain all data models, export/import logic, and component rendering views. The PreviewRunner target includes a subset of these files via Xcode's file system synchronization exceptions.
 
 ### State Management
 
@@ -418,29 +418,30 @@ The runner reuses the exact same `CanvasBlockView` rendering code as the macOS b
 ## Project Structure
 
 ```
-alpha/
-├── alpha/                          # macOS builder app
-│   ├── alphaApp.swift             # @main entry + BuilderCommands (keyboard shortcuts)
-│   ├── ContentView.swift          # Root view, owns @State ProjectStore
-│   ├── ProjectStore.swift         # @Observable centralized state + all actions
-│   ├── BuilderWorkspaceV2.swift   # Main workspace layout (4-zone split)
-│   ├── ScreenListView.swift       # Screen list sidebar + inline rename + context menu
-│   ├── ComponentLibraryView.swift # Component catalog + search + CanvasOutlineView
-│   ├── CanvasColumnView.swift     # Center device preview column
-│   ├── InspectorView.swift        # Property editor (6 collapsible sections)
-│   ├── CodeGenerator.swift        # SwiftUI source code export (21 component types)
-│   ├── TemplateGallery.swift      # 6 pre-built screen templates
-│   ├── SimulatorLauncher.swift    # Build + deploy + launch automation
-│   ├── WorkspaceToolbar.swift     # Top toolbar (device, appearance, zoom, actions)
-│   ├── WorkspaceTheme.swift       # Design system (spacing, typography, colors)
-│   └── Shared/
-│       ├── CanvasModels.swift     # All data models, enums, export/import, device presets
-│       └── CanvasViews.swift      # DevicePreview chrome + CanvasBlockView rendering
+SwiftBuilder/
+├── SwiftBuilder/                   # macOS builder app
+│   ├── App/
+│   │   ├── SwiftBuilderApp.swift  # @main entry + BuilderCommands (keyboard shortcuts)
+│   │   └── ContentView.swift      # Root view, owns @State ProjectStore
+│   ├── Core/
+│   │   ├── Models/                # CanvasBlock, Screen, DevicePreset, etc.
+│   │   ├── Export/                # ExportModels, ProjectExporter, CanvasBlock+Export
+│   │   ├── Extensions/            # Color+Utilities
+│   │   ├── Theme/                 # WorkspaceTheme, DesignTokens
+│   │   └── Services/              # ProjectStore, SimulatorLauncher, CodeGenerator
+│   ├── Components/
+│   │   ├── Atoms/                 # BlockRow, SelectionOutline, PanelHeader, etc.
+│   │   ├── Molecules/             # CanvasBlockView, ScreenRow, TemplateCard
+│   │   └── Organisms/             # DevicePreview, InspectorView, ComponentLibrary, etc.
+│   ├── Screens/                   # BuilderWorkspaceV2
+│   └── Resources/                 # ScreenTemplates
 ├── PreviewRunner/                 # iOS preview app
-│   ├── PreviewRunnerApp.swift     # iOS @main entry point
-│   └── ContentView.swift          # Project loader + NavigationStack renderer
+│   ├── App/                       # PreviewRunnerApp
+│   ├── Views/                     # ContentView, ScreenContentView
+│   ├── Services/                  # ProjectLoader
+│   └── Utilities/                 # ShakeGesture
 ├── SavedProjects/                 # Persisted project JSON files
-└── alpha.xcodeproj/               # Xcode project (dual-target)
+└── SwiftBuilder.xcodeproj/        # Xcode project (dual-target)
 ```
 
 ---

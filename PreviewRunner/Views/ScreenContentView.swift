@@ -44,9 +44,14 @@ struct ScreenContentView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
+    private static let navigableKinds: Set<CanvasBlock.Kind> = [
+        .primaryButton, .secondaryButton, .linkButton, .card, .iconRow
+    ]
+
     @ViewBuilder
     private func blockRow(_ block: CanvasBlock) -> some View {
         let isButton = [CanvasBlock.Kind.primaryButton, .secondaryButton, .linkButton].contains(block.kind)
+        let canNavigate = Self.navigableKinds.contains(block.kind)
         let targetScreen = block.navigationTarget.flatMap { tid in
             allScreens.first(where: { $0.id == tid })
         }
@@ -62,19 +67,11 @@ struct ScreenContentView: View {
         )
         .padding(.top, CGFloat(block.spacingBefore))
 
-        if let target = targetScreen {
+        if canNavigate, let target = targetScreen {
             NavigationLink(value: target.id) {
                 view
             }
             .buttonStyle(.plain)
-        } else if block.navigationTarget != nil {
-            view.overlay(alignment: .topTrailing) {
-                Text("nav target not found")
-                    .font(.system(size: 8))
-                    .foregroundColor(.red)
-                    .padding(2)
-                    .background(.red.opacity(0.15))
-            }
         } else {
             view
         }

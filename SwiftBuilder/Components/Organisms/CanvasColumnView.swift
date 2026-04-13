@@ -1,6 +1,6 @@
 //
 //  CanvasColumnView.swift
-//  alpha
+//  SwiftBuilder
 //
 
 import SwiftUI

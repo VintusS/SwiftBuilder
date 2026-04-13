@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$SCRIPT_DIR"
 BUNDLE_ID="com.vintuss.PreviewRunner"
-OUTPUT_DIR="/tmp/AlphaPreviewRunnerBuild"
+OUTPUT_DIR="/tmp/SwiftBuilderPreviewRunnerBuild"
 EXPECTED_APP="$OUTPUT_DIR/PreviewRunner.app"
 DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
 
@@ -90,7 +90,7 @@ mkdir -p "$OUTPUT_DIR"
 
 echo "[deploy] Building PreviewRunner (clean build)..."
 "$XCODEBUILD" \
-    -project "$PROJECT_DIR/alpha.xcodeproj" \
+    -project "$PROJECT_DIR/SwiftBuilder.xcodeproj" \
     -target PreviewRunner \
     -sdk iphonesimulator \
     -configuration Debug \
@@ -123,7 +123,7 @@ echo "[deploy] Installing..."
 "$SIMCTL" uninstall "$SIM_UDID" "$BUNDLE_ID" 2>/dev/null || true
 "$SIMCTL" install "$SIM_UDID" "$EXPECTED_APP"
 
-echo "[deploy] Launching with ALPHA_PROJECT_DIR..."
-SIMCTL_CHILD_ALPHA_PROJECT_DIR="$SAVED_DIR" "$SIMCTL" launch "$SIM_UDID" "$BUNDLE_ID"
+echo "[deploy] Launching PreviewRunner..."
+SIMCTL_CHILD_SWIFTBUILDER_PROJECT_DIR="$SAVED_DIR" "$SIMCTL" launch "$SIM_UDID" "$BUNDLE_ID"
 
 echo "[deploy] Done! PreviewRunner is running on simulator."

@@ -1,6 +1,6 @@
 //
 //  SimulatorLauncher.swift
-//  alpha
+//  SwiftBuilder
 //
 //  Handles building and launching the PreviewRunner app on iOS Simulator
 //
@@ -139,16 +139,16 @@ class SimulatorLauncher {
         
         // Strategy 0: Use compile-time source file path (most reliable)
         let sourceFile = #file
-        let alphaSubdir = (sourceFile as NSString).deletingLastPathComponent
-        let candidateRoot = (alphaSubdir as NSString).deletingLastPathComponent
-        if fileManager.fileExists(atPath: (candidateRoot as NSString).appendingPathComponent("alpha.xcodeproj")) {
+        let sourceSubdir = (sourceFile as NSString).deletingLastPathComponent
+        let candidateRoot = (sourceSubdir as NSString).deletingLastPathComponent
+        if fileManager.fileExists(atPath: (candidateRoot as NSString).appendingPathComponent("SwiftBuilder.xcodeproj")) {
             return candidateRoot
         }
         
         // Strategy 1: Check current working directory
         var searchPath = fileManager.currentDirectoryPath
         for _ in 0..<10 {
-            let projectPath = (searchPath as NSString).appendingPathComponent("alpha.xcodeproj")
+            let projectPath = (searchPath as NSString).appendingPathComponent("SwiftBuilder.xcodeproj")
             if fileManager.fileExists(atPath: projectPath) {
                 return searchPath
             }
@@ -161,7 +161,7 @@ class SimulatorLauncher {
         if let bundlePath = Bundle.main.bundlePath as String? {
             var checkPath = (bundlePath as NSString).deletingLastPathComponent
             for _ in 0..<5 {
-                let projectPath = (checkPath as NSString).appendingPathComponent("alpha.xcodeproj")
+                let projectPath = (checkPath as NSString).appendingPathComponent("SwiftBuilder.xcodeproj")
                 if fileManager.fileExists(atPath: projectPath) {
                     return checkPath
                 }
@@ -174,7 +174,7 @@ class SimulatorLauncher {
         // Strategy 3: Check common locations
         let homeDir = NSHomeDirectory()
         let commonPaths = [
-            (homeDir as NSString).appendingPathComponent("Desktop/University/Thesis/Old folder Thesis Project/alpha"),
+            (homeDir as NSString).appendingPathComponent("Desktop/University/Thesis/Old folder Thesis Project/SwiftBuilder"),
             homeDir,
             (homeDir as NSString).appendingPathComponent("Desktop"),
             (homeDir as NSString).appendingPathComponent("Documents")
@@ -182,7 +182,7 @@ class SimulatorLauncher {
         
         for basePath in commonPaths {
             if fileManager.fileExists(atPath: basePath) {
-                let projectPath = (basePath as NSString).appendingPathComponent("alpha.xcodeproj")
+                let projectPath = (basePath as NSString).appendingPathComponent("SwiftBuilder.xcodeproj")
                 if fileManager.fileExists(atPath: projectPath) {
                     return basePath
                 }
@@ -570,9 +570,9 @@ class SimulatorLauncher {
     // MARK: - Build & Install
     
     private func buildApp(projectPath: String, simulatorUDID: String, simulatorName: String, projectName: String) async throws -> String {
-        let outputDir = NSTemporaryDirectory() + "AlphaPreviewRunnerBuild"
+        let outputDir = NSTemporaryDirectory() + "SwiftBuilderPreviewRunnerBuild"
         let expectedApp = "\(outputDir)/PreviewRunner.app"
-        let logFile = NSTemporaryDirectory() + "AlphaPreviewRunnerBuild.log"
+        let logFile = NSTemporaryDirectory() + "SwiftBuilderPreviewRunnerBuild.log"
         let developerDir = getDeveloperDirectory() ?? "/Applications/Xcode.app/Contents/Developer"
         let xcodebuildPath = findXcodebuildPath()
         
@@ -585,7 +585,7 @@ class SimulatorLauncher {
         rm -rf "$OUTPUT_DIR"
         mkdir -p "$OUTPUT_DIR"
         "\(xcodebuildPath)" \
-            -project "\(projectPath)/alpha.xcodeproj" \
+            -project "\(projectPath)/SwiftBuilder.xcodeproj" \
             -target PreviewRunner \
             -sdk iphonesimulator \
             -configuration Debug \
