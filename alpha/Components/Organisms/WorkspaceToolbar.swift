@@ -1,8 +1,3 @@
-//
-//  WorkspaceToolbar.swift
-//  alpha
-//
-
 import SwiftUI
 
 struct WorkspaceToolbar: View {
@@ -35,8 +30,6 @@ struct WorkspaceToolbar: View {
         }
     }
 
-    // MARK: - Left Zone: Identity + Project Name
-
     private var leftZone: some View {
         HStack(spacing: Spacing.md) {
             Text("SwiftBuilder")
@@ -57,8 +50,6 @@ struct WorkspaceToolbar: View {
                 .frame(width: 160)
         }
     }
-
-    // MARK: - Center Zone: Preview Controls
 
     private var centerZone: some View {
         HStack(spacing: Spacing.md) {
@@ -96,8 +87,6 @@ struct WorkspaceToolbar: View {
             }
         }
     }
-
-    // MARK: - Right Zone: Actions
 
     private var rightZone: some View {
         HStack(spacing: Spacing.sm) {
@@ -158,15 +147,5 @@ struct WorkspaceToolbar: View {
             .disabled(isBuilding)
             .help("Build & Run on Simulator")
         }
-    }
-}
-
-// MARK: - Toolbar Pill Divider
-
-private struct PillDivider: View {
-    var body: some View {
-        RoundedRectangle(cornerRadius: 1)
-            .fill(Color.primary.opacity(0.12))
-            .frame(width: 1, height: 20)
     }
 }

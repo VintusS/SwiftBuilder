@@ -15,8 +15,18 @@
 		71B876212EA44C61009CC665 /* Exceptions for "alpha" folder in "PreviewRunner" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Shared/CanvasModels.swift,
-				Shared/CanvasViews.swift,
+				"Components/Atoms/BlockRow.swift",
+				"Components/Atoms/SelectionOutline.swift",
+				"Components/Molecules/CanvasBlockView.swift",
+				"Core/Export/CanvasBlock+Export.swift",
+				"Core/Export/ExportModels.swift",
+				"Core/Extensions/Color+Utilities.swift",
+				"Core/Models/BlockAlignment.swift",
+				"Core/Models/CanvasBlock.swift",
+				"Core/Models/DevicePreset.swift",
+				"Core/Models/FontWeightOption.swift",
+				"Core/Models/PreviewAppearance.swift",
+				"Core/Models/Screen.swift",
 			);
 			target = 71B8760E2EA4492E009CC665 /* PreviewRunner */;
 		};
