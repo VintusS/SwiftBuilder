@@ -3,64 +3,82 @@ import SwiftUI
 struct WorkspaceTheme {
     let colorScheme: ColorScheme
 
+    var brandAccent: Color {
+        Color(red: 1.0, green: 0.04, blue: 0.03)
+    }
+
+    var brandAccentHighlight: Color {
+        Color(red: 1.0, green: 0.28, blue: 0.22)
+    }
+
+    var brandAccentDeep: Color {
+        Color(red: 0.52, green: 0.0, blue: 0.0)
+    }
+
     var workspaceBackground: Color {
         colorScheme == .dark
-        ? Color(red: 0.09, green: 0.1, blue: 0.12)
-        : Color(red: 0.95, green: 0.96, blue: 0.98)
+        ? Color(red: 0.035, green: 0.025, blue: 0.025)
+        : Color(red: 0.975, green: 0.955, blue: 0.95)
+    }
+
+    var toolbarBackground: Color {
+        colorScheme == .dark
+        ? Color(red: 0.055, green: 0.035, blue: 0.035)
+        : Color(red: 0.99, green: 0.965, blue: 0.955)
     }
 
     var panelBackground: Color {
         colorScheme == .dark
-        ? Color(red: 0.14, green: 0.15, blue: 0.18)
-        : Color.white
+        ? Color(red: 0.075, green: 0.055, blue: 0.055)
+        : Color(red: 1.0, green: 0.985, blue: 0.98)
     }
 
     var elevatedBackground: Color {
         colorScheme == .dark
-        ? Color(red: 0.17, green: 0.18, blue: 0.22)
-        : Color(red: 0.98, green: 0.98, blue: 0.99)
+        ? Color(red: 0.105, green: 0.075, blue: 0.075)
+        : Color(red: 0.995, green: 0.97, blue: 0.96)
     }
 
     var panelShadowColor: Color {
-        colorScheme == .dark ? Color.black.opacity(0.45) : Color.black.opacity(0.08)
+        colorScheme == .dark ? Color.black.opacity(0.65) : brandAccentDeep.opacity(0.08)
     }
 
     var cardShadowColor: Color {
-        colorScheme == .dark ? Color.black.opacity(0.45) : Color.black.opacity(0.04)
+        colorScheme == .dark ? Color.black.opacity(0.55) : brandAccentDeep.opacity(0.06)
     }
 
     var outlineStrokeColor: Color {
-        colorScheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.06)
+        colorScheme == .dark ? brandAccent.opacity(0.14) : brandAccentDeep.opacity(0.10)
     }
 
     var subtleDivider: Color {
-        colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)
+        colorScheme == .dark ? brandAccent.opacity(0.12) : brandAccentDeep.opacity(0.09)
     }
 
     func outlineFill(isActive: Bool) -> Color {
         if isActive {
-            return Color.accentColor.opacity(colorScheme == .dark ? 0.24 : 0.14)
+            return brandAccent.opacity(colorScheme == .dark ? 0.26 : 0.13)
         }
         return panelBackground
     }
 
     var hoverOverlay: Color {
-        colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04)
+        colorScheme == .dark ? brandAccent.opacity(0.10) : brandAccentDeep.opacity(0.05)
     }
 
     var pressedOverlay: Color {
-        colorScheme == .dark ? Color.white.opacity(0.10) : Color.black.opacity(0.07)
+        colorScheme == .dark ? brandAccent.opacity(0.16) : brandAccentDeep.opacity(0.08)
     }
 
     var hoverStroke: Color {
-        colorScheme == .dark ? Color.white.opacity(0.18) : Color.black.opacity(0.10)
+        colorScheme == .dark ? brandAccent.opacity(0.28) : brandAccentDeep.opacity(0.14)
     }
 
     var secondaryText: Color {
-        colorScheme == .dark ? Color.white.opacity(0.55) : Color.black.opacity(0.45)
+        colorScheme == .dark ? Color.white.opacity(0.62) : Color.black.opacity(0.50)
     }
 
     var tertiaryText: Color {
-        colorScheme == .dark ? Color.white.opacity(0.35) : Color.black.opacity(0.30)
+        colorScheme == .dark ? Color.white.opacity(0.40) : Color.black.opacity(0.34)
     }
 }

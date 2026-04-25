@@ -2,6 +2,8 @@ import SwiftUI
 import SwiftBuilderComponents
 
 struct WorkspaceToolbar: View {
+    let theme: WorkspaceTheme
+
     @Binding var projectName: String
     @Binding var selectedDevice: DevicePreset
     @Binding var appearance: PreviewAppearance
@@ -25,7 +27,12 @@ struct WorkspaceToolbar: View {
         }
         .padding(.horizontal, Spacing.xl)
         .padding(.vertical, 10)
-        .background(.ultraThinMaterial)
+        .background(theme.toolbarBackground)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(theme.brandAccent.opacity(0.22))
+                .frame(height: 1)
+        }
         .alert(item: $alertInfo) { info in
             Alert(title: Text(info.title), message: Text(info.message), dismissButton: .default(Text("OK")))
         }
@@ -35,7 +42,13 @@ struct WorkspaceToolbar: View {
         HStack(spacing: Spacing.md) {
             Text("SwiftBuilder")
                 .font(TypographyPreset.toolbarTitle)
-                .foregroundStyle(.primary)
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [theme.brandAccentHighlight, theme.brandAccent],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
 
             PillDivider()
 
@@ -46,7 +59,11 @@ struct WorkspaceToolbar: View {
                 .padding(.vertical, 6)
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color.primary.opacity(0.05))
+                        .fill(theme.elevatedBackground)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(theme.outlineStrokeColor, lineWidth: 1)
+                        )
                 )
                 .frame(width: 160)
         }
@@ -61,6 +78,7 @@ struct WorkspaceToolbar: View {
             }
             .pickerStyle(.menu)
             .frame(width: 180)
+            .tint(theme.brandAccent)
 
             Picker("Appearance", selection: $appearance) {
                 ForEach(PreviewAppearance.allCases) { mode in
@@ -69,6 +87,7 @@ struct WorkspaceToolbar: View {
             }
             .pickerStyle(.segmented)
             .frame(width: 200)
+            .tint(theme.brandAccent)
 
             PillDivider()
 
@@ -78,6 +97,7 @@ struct WorkspaceToolbar: View {
                     .foregroundStyle(.secondary)
                 Slider(value: $zoomLevel, in: 0.65...1.35)
                     .frame(width: 80)
+                    .tint(theme.brandAccent)
                 Image(systemName: "plus.magnifyingglass")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
@@ -117,6 +137,7 @@ struct WorkspaceToolbar: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.bordered)
+            .tint(theme.brandAccent)
             .help("Save Project")
 
             Button(action: onExportCode) {
@@ -126,6 +147,7 @@ struct WorkspaceToolbar: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.bordered)
+            .tint(theme.brandAccent)
             .help("Export SwiftUI Code")
 
             Button(action: onLaunchSimulator) {
@@ -145,6 +167,7 @@ struct WorkspaceToolbar: View {
                 .frame(height: 28)
             }
             .buttonStyle(.borderedProminent)
+            .tint(theme.brandAccent)
             .disabled(isBuilding)
             .help("Build & Run on Simulator")
         }

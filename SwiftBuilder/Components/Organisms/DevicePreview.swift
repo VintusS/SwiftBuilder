@@ -11,20 +11,20 @@ struct DevicePreview: View {
 
     private var frameColor: Color {
         appearance == .dark
-            ? Color(red: 0.14, green: 0.14, blue: 0.16)
-            : Color(red: 0.26, green: 0.26, blue: 0.28)
+            ? Color(red: 0.035, green: 0.025, blue: 0.025)
+            : Color(red: 0.16, green: 0.11, blue: 0.11)
     }
 
     private var frameLightEdge: Color {
         appearance == .dark
-            ? Color.white.opacity(0.08)
-            : Color.white.opacity(0.35)
+            ? Color(red: 1.0, green: 0.06, blue: 0.04).opacity(0.28)
+            : Color(red: 1.0, green: 0.18, blue: 0.13).opacity(0.40)
     }
 
     private var frameDarkEdge: Color {
         appearance == .dark
-            ? Color.black.opacity(0.5)
-            : Color.black.opacity(0.15)
+            ? Color.black.opacity(0.75)
+            : Color(red: 0.35, green: 0.0, blue: 0.0).opacity(0.26)
     }
 
     private var screenBG: Color { appearance.canvasBackground }
@@ -46,7 +46,7 @@ struct DevicePreview: View {
 
     private var deviceShadow: some View {
         RoundedRectangle(cornerRadius: device.frameCornerRadius, style: .continuous)
-            .fill(Color.black.opacity(0.25))
+            .fill(Color(red: 0.65, green: 0.0, blue: 0.0).opacity(0.22))
             .frame(width: device.frameSize.width, height: device.frameSize.height)
             .blur(radius: 36)
             .offset(y: 18)
@@ -62,7 +62,7 @@ struct DevicePreview: View {
                         colors: [
                             frameColor.opacity(0.95),
                             frameColor,
-                            frameColor.opacity(0.92)
+                            Color(red: 0.03, green: 0.02, blue: 0.02)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
@@ -191,15 +191,15 @@ struct DevicePreview: View {
             .overlay(
                 HStack(spacing: diSize.width - 42) {
                     Circle()
-                        .fill(Color(red: 0.08, green: 0.08, blue: 0.12))
+                        .fill(Color(red: 0.08, green: 0.03, blue: 0.035))
                         .frame(width: 12, height: 12)
                         .overlay(
                             Circle()
-                                .fill(Color(red: 0.12, green: 0.12, blue: 0.18).opacity(0.6))
+                                .fill(Color(red: 0.25, green: 0.02, blue: 0.02).opacity(0.6))
                                 .frame(width: 6, height: 6)
                         )
                     Circle()
-                        .fill(Color(red: 0.06, green: 0.06, blue: 0.1))
+                        .fill(Color(red: 0.05, green: 0.02, blue: 0.025))
                         .frame(width: 6, height: 6)
                 }
             )
