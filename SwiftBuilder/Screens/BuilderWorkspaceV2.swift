@@ -43,11 +43,17 @@ struct BuilderWorkspaceV2: View {
                 zoomLevel: $store.zoomLevel,
                 isBuilding: $store.isBuilding,
                 alertInfo: $store.alertInfo,
+                runTarget: $store.runTarget,
+                availablePhysicalDevices: store.availablePhysicalDevices,
+                selectedPhysicalDeviceID: $store.selectedPhysicalDeviceID,
+                isRefreshingPhysicalDevices: store.isRefreshingPhysicalDevices,
+                physicalDeviceStatusMessage: store.physicalDeviceStatusMessage,
                 onReset: { store.resetCanvas() },
                 onSave: { store.saveProject() },
                 onExportCode: { store.exportCode() },
                 onShowRunGuide: { store.showRunGuide() },
-                onLaunchSimulator: { store.launchSimulator() }
+                onRefreshPhysicalDevices: { store.refreshPhysicalDevices() },
+                onLaunchPreview: { store.launchPreview() }
             )
             PanelDivider(theme: theme)
             HStack(spacing: 0) {
@@ -81,8 +87,18 @@ struct BuilderWorkspaceV2: View {
         }
         .background(theme.workspaceBackground)
         .focusedValue(\.store, store)
-        .onAppear { store.undoManager = undoManager }
+        .onAppear {
+            store.undoManager = undoManager
+            if store.runTarget == .physicalDevice {
+                store.refreshPhysicalDevices()
+            }
+        }
         .onChange(of: undoManager) { _, newValue in store.undoManager = newValue }
+        .onChange(of: store.runTarget) { _, newTarget in
+            if newTarget == .physicalDevice {
+                store.refreshPhysicalDevices()
+            }
+        }
         .sheet(isPresented: $store.showingTemplateGallery) {
             TemplateGallery(
                 onSelect: { screen in store.addScreenFromTemplate(screen) },

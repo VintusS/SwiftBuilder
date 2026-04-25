@@ -28,6 +28,11 @@ class ProjectStore {
     var alertInfo: AlertInfo?
     var isBuilding = false
     var showingTemplateGallery = false
+    var runTarget: RunTarget = .simulator
+    var availablePhysicalDevices: [PhysicalDevice] = []
+    var selectedPhysicalDeviceID: String?
+    var isRefreshingPhysicalDevices = false
+    var physicalDeviceStatusMessage: String?
 
     var undoManager: UndoManager?
     let launcher = SimulatorLauncher()
@@ -325,24 +330,71 @@ class ProjectStore {
 
     func showRunGuide() {
         let saveDir = (getProjectPath() ?? "~") + "/SavedProjects/"
-        showAlert(title: "Run on Simulator / Device", message: """
-1. Save your project first using "Save Project" button.
-2. Use "Run on Simulator" to automatically build and launch, or manually:
-   - Run ./deploy_preview.sh from Terminal in the project folder
-   - Or open Xcode, select PreviewRunner scheme, choose a simulator, press \u{2318}R
+        showAlert(title: "Run Preview", message: """
+1. Save your project first using "Save Project".
+2. Choose Simulator or Real Device next to Run.
+3. For Real Device, plug in an iPhone, unlock it, trust this Mac, and enable Developer Mode.
+4. If device signing fails, open Xcode and check PreviewRunner > Signing & Capabilities.
 
 Projects are saved to: \(saveDir)
 """)
     }
 
-    func launchSimulator() {
+    func refreshPhysicalDevices() {
+#if os(macOS)
+        guard !isRefreshingPhysicalDevices else { return }
+        isRefreshingPhysicalDevices = true
+        physicalDeviceStatusMessage = nil
+
+        Task {
+            do {
+                let devices = try await launcher.discoverPhysicalDevices()
+                await MainActor.run {
+                    self.availablePhysicalDevices = devices
+                    let selectedStillConnected = self.selectedPhysicalDeviceID.map { selectedID in
+                        devices.contains(where: { $0.id == selectedID && $0.isAvailable })
+                    } ?? false
+                    if !selectedStillConnected {
+                        self.selectedPhysicalDeviceID = devices.first(where: { $0.isAvailable })?.id ?? devices.first?.id
+                    }
+
+                    if devices.isEmpty {
+                        self.physicalDeviceStatusMessage = """
+                        No iPhone found. Plug in an iPhone, unlock it, trust this Mac, and enable Developer Mode.
+                        """
+                    } else if !devices.contains(where: { $0.isAvailable }) {
+                        self.physicalDeviceStatusMessage = """
+                        Connected iPhone is unavailable. Unlock it, trust this Mac, and enable Developer Mode.
+                        """
+                    } else {
+                        self.physicalDeviceStatusMessage = nil
+                    }
+                    self.isRefreshingPhysicalDevices = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.availablePhysicalDevices = []
+                    self.selectedPhysicalDeviceID = nil
+                    self.physicalDeviceStatusMessage = error.localizedDescription
+                    self.isRefreshingPhysicalDevices = false
+                }
+            }
+        }
+#else
+        physicalDeviceStatusMessage = "Real-device launch requires the macOS build."
+#endif
+    }
+
+    func launchPreview() {
         let project = buildProject()
         isBuilding = true
 
         launcher.launch(
             project: project,
             projectName: projectName,
+            target: runTarget,
             simulatorName: selectedDevice.displayName,
+            physicalDeviceID: selectedPhysicalDeviceID,
             onProgress: { _ in },
             onSuccess: { [weak self] _ in
                 self?.isBuilding = false
@@ -356,7 +408,7 @@ Projects are saved to: \(saveDir)
 Try building manually:
 1. Open Xcode
 2. Select PreviewRunner scheme
-3. Choose your simulator
+3. Choose your simulator or connected iPhone
 4. Press \u{2318}R to build and run
 """)
                 } else {
@@ -364,6 +416,11 @@ Try building manually:
                 }
             }
         )
+    }
+
+    func launchSimulator() {
+        runTarget = .simulator
+        launchPreview()
     }
 
     // MARK: - Helpers

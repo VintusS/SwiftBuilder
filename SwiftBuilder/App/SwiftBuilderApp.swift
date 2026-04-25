@@ -36,8 +36,8 @@ struct BuilderCommands: Commands {
 
             Divider()
 
-            Button("Run on Simulator") {
-                store?.launchSimulator()
+            Button("Run Preview") {
+                store?.launchPreview()
             }
             .keyboardShortcut("r", modifiers: .command)
             .disabled(store?.isBuilding == true)
