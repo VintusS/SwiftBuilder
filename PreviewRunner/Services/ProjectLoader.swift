@@ -11,9 +11,11 @@ import SwiftBuilderComponents
 struct ProjectLoader {
     static func loadLatestWithSource() throws -> (BuilderProject, String) {
         // 1. Direct project path passed via SIMCTL_CHILD env var (highest priority)
-        if let projectDir = ProcessInfo.processInfo.environment["ALPHA_PROJECT_DIR"] {
+        let environment = ProcessInfo.processInfo.environment
+        let projectDirValue = environment["SWIFTBUILDER_PROJECT_DIR"] ?? environment["ALPHA_PROJECT_DIR"]
+        if let projectDir = projectDirValue {
             let dir = URL(fileURLWithPath: projectDir)
-            print("[PreviewRunner] Checking ALPHA_PROJECT_DIR: \(dir.path)")
+            print("[PreviewRunner] Checking project dir: \(dir.path)")
             if let (project, file) = try? loadLatestFromDirectory(dir) {
                 return (project, "PROJECT_DIR: \(file)")
             }
@@ -76,6 +78,6 @@ struct ProjectLoader {
 enum ProjectLoadError: LocalizedError {
     case noProjectFound
     var errorDescription: String? {
-        "No exported project found. Use 'Run on Simulator' from the builder app."
+        "No exported project found. Use 'Run Preview' from the builder app."
     }
 }

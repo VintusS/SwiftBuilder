@@ -10,12 +10,18 @@ struct WorkspaceToolbar: View {
     @Binding var zoomLevel: Double
     @Binding var isBuilding: Bool
     @Binding var alertInfo: AlertInfo?
+    @Binding var runTarget: RunTarget
+    let availablePhysicalDevices: [PhysicalDevice]
+    @Binding var selectedPhysicalDeviceID: String?
+    let isRefreshingPhysicalDevices: Bool
+    let physicalDeviceStatusMessage: String?
 
     let onReset: () -> Void
     let onSave: () -> Void
     let onExportCode: () -> Void
     let onShowRunGuide: () -> Void
-    let onLaunchSimulator: () -> Void
+    let onRefreshPhysicalDevices: () -> Void
+    let onLaunchPreview: () -> Void
 
     var body: some View {
         HStack(spacing: 0) {
@@ -150,7 +156,9 @@ struct WorkspaceToolbar: View {
             .tint(theme.brandAccent)
             .help("Export SwiftUI Code")
 
-            Button(action: onLaunchSimulator) {
+            runTargetControls
+
+            Button(action: onLaunchPreview) {
                 HStack(spacing: 6) {
                     if isBuilding {
                         ProgressView()
@@ -168,8 +176,120 @@ struct WorkspaceToolbar: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(theme.brandAccent)
-            .disabled(isBuilding)
-            .help("Build & Run on Simulator")
+            .disabled(isBuilding || !canRunSelectedTarget)
+            .help(runTarget.runButtonHelp)
+        }
+    }
+
+    private var runTargetControls: some View {
+        HStack(spacing: 6) {
+            Menu {
+                ForEach(RunTarget.allCases) { target in
+                    Button {
+                        runTarget = target
+                    } label: {
+                        Label(target.title, systemImage: target == runTarget ? "checkmark" : target.systemImage)
+                    }
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: runTarget.systemImage)
+                        .font(.system(size: 12, weight: .semibold))
+                    Text(runTarget.title)
+                        .font(.system(size: 12, weight: .semibold))
+                        .lineLimit(1)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 9)
+                .frame(width: 118, height: 28)
+                .contentShape(Rectangle())
+            }
+            .menuStyle(.borderlessButton)
+            .help("Choose where PreviewRunner should launch")
+
+            if runTarget == .physicalDevice {
+                physicalDeviceMenu
+
+                Button(action: onRefreshPhysicalDevices) {
+                    if isRefreshingPhysicalDevices {
+                        ProgressView()
+                            .scaleEffect(0.55)
+                            .frame(width: 14, height: 14)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 11, weight: .semibold))
+                            .frame(width: 14, height: 14)
+                    }
+                }
+                .buttonStyle(.bordered)
+                .tint(theme.brandAccent)
+                .frame(width: 32, height: 28)
+                .disabled(isRefreshingPhysicalDevices)
+                .help("Refresh connected iPhones")
+            }
+        }
+    }
+
+    private var physicalDeviceMenu: some View {
+        Menu {
+            if availablePhysicalDevices.isEmpty {
+                Button {
+                    onRefreshPhysicalDevices()
+                } label: {
+                    Label("No iPhone Found", systemImage: "exclamationmark.triangle")
+                }
+            } else {
+                ForEach(availablePhysicalDevices) { device in
+                    Button {
+                        selectedPhysicalDeviceID = device.id
+                    } label: {
+                        Label(
+                            device.displayName,
+                            systemImage: device.id == selectedPhysicalDeviceID ? "checkmark" : "iphone"
+                        )
+                    }
+                    .disabled(!device.isAvailable)
+                }
+
+                Divider()
+
+                Button(action: onRefreshPhysicalDevices) {
+                    Label("Refresh Devices", systemImage: "arrow.clockwise")
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: selectedPhysicalDevice?.isAvailable == false ? "exclamationmark.triangle" : "iphone")
+                    .font(.system(size: 12, weight: .semibold))
+                Text(selectedPhysicalDevice?.displayName ?? "No iPhone")
+                    .font(.system(size: 12, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 9)
+            .frame(width: 164, height: 28)
+            .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .help(physicalDeviceStatusMessage ?? "Select a connected, trusted iPhone")
+    }
+
+    private var selectedPhysicalDevice: PhysicalDevice? {
+        guard let selectedPhysicalDeviceID else { return nil }
+        return availablePhysicalDevices.first { $0.id == selectedPhysicalDeviceID }
+    }
+
+    private var canRunSelectedTarget: Bool {
+        switch runTarget {
+        case .simulator:
+            return true
+        case .physicalDevice:
+            return selectedPhysicalDevice?.isAvailable == true
         }
     }
 }
