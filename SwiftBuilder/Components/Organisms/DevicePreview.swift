@@ -4,7 +4,6 @@ import SwiftBuilderComponents
 struct DevicePreview: View {
     let device: DevicePreset
     let appearance: PreviewAppearance
-    let zoom: Double
     let blocks: [CanvasBlock]
     let selectedID: CanvasBlock.ID?
     let onSelect: (CanvasBlock.ID) -> Void
@@ -38,8 +37,7 @@ struct DevicePreview: View {
             chromeOverlays
             sideButtons
         }
-        .scaleEffect(zoom)
-        .animation(.easeOut(duration: 0.2), value: zoom)
+        .frame(width: device.frameSize.width, height: device.frameSize.height)
     }
 
     // MARK: - Shadow

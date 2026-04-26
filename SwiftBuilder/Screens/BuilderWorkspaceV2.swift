@@ -69,7 +69,7 @@ struct BuilderWorkspaceV2: View {
                     theme: theme,
                     selectedDevice: store.selectedDevice,
                     appearance: store.appearance,
-                    zoomLevel: store.zoomLevel,
+                    zoomLevel: $store.zoomLevel,
                     blocks: store.currentBlocks,
                     selectedBlockID: store.selectedBlockID,
                     screenName: store.currentScreen?.name ?? "Screen",
