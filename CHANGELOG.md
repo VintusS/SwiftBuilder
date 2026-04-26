@@ -4,6 +4,17 @@ All notable changes to the SwiftBuilder project are documented here.
 
 ---
 
+## [2026-04-26] SwiftLint Project Integration
+
+**Type:** Tooling
+
+### Linting
+- Added a root `.swiftlint.yml` for SwiftBuilder and PreviewRunner sources.
+- Added SwiftLint build phases to both Xcode targets.
+- Build phases run SwiftLint when installed and emit a warning with install guidance when missing.
+
+---
+
 ## [2026-04-26] Preview Pinch Zoom and Canvas Scrolling
 
 **Type:** Bug Fix / UX

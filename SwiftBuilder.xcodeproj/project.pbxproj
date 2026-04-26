@@ -74,6 +74,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 712DC3D82E931A5100AE353E /* Build configuration list for PBXNativeTarget "SwiftBuilder" */;
 			buildPhases = (
+				71SWLINT2F95000000AB5678 /* SwiftLint */,
 				712DC3C92E931A5000AE353E /* Sources */,
 				712DC3CA2E931A5000AE353E /* Frameworks */,
 				712DC3CB2E931A5000AE353E /* Resources */,
@@ -97,6 +98,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 71B876192EA4492F009CC665 /* Build configuration list for PBXNativeTarget "PreviewRunner" */;
 			buildPhases = (
+				71SWLINT3F95000000AB5678 /* SwiftLint */,
 				71B8760B2EA4492E009CC665 /* Sources */,
 				71B8760C2EA4492E009CC665 /* Frameworks */,
 				71B8760D2EA4492E009CC665 /* Resources */,
@@ -173,6 +175,53 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		71SWLINT2F95000000AB5678 /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.swiftlint.yml",
+				"$(SRCROOT)/PreviewRunner",
+				"$(SRCROOT)/SwiftBuilder",
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if command -v swiftlint >/dev/null 2>&1; then\n    swiftlint --config \"${SRCROOT}/.swiftlint.yml\"\nelse\n    echo \"warning: SwiftLint not installed. Install it with 'brew install swiftlint'.\"\nfi\n";
+		};
+		71SWLINT3F95000000AB5678 /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.swiftlint.yml",
+				"$(SRCROOT)/PreviewRunner",
+				"$(SRCROOT)/SwiftBuilder",
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if command -v swiftlint >/dev/null 2>&1; then\n    swiftlint --config \"${SRCROOT}/.swiftlint.yml\"\nelse\n    echo \"warning: SwiftLint not installed. Install it with 'brew install swiftlint'.\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		712DC3C92E931A5000AE353E /* Sources */ = {
