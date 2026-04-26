@@ -19,6 +19,7 @@ enum LaunchError: LocalizedError {
     case developerToolsUnavailable(String)
     case buildFailed(String)
     case appNotFound
+    case appIconFailed(String)
     case installFailed(String)
     case copyFailed(String)
     case launchFailed(String)
@@ -52,6 +53,8 @@ enum LaunchError: LocalizedError {
             return "Build failed:\n\n\(truncated)\n\n\(tip)"
         case .appNotFound:
             return "Could not find the built app. The build may have failed."
+        case .appIconFailed(let message):
+            return "Could not prepare the app icon:\n\(message)"
         case .installFailed(let output):
             return "Install failed:\n\(output.prefix(500))"
         case .copyFailed(let output):
@@ -73,6 +76,7 @@ class SimulatorLauncher {
         target: RunTarget,
         simulatorName: String,
         physicalDeviceID: String?,
+        appIconURL: URL?,
         onProgress: @escaping @Sendable (String) -> Void,
         onSuccess: @escaping @Sendable (String) -> Void,
         onError: @escaping @Sendable (String) -> Void
@@ -89,6 +93,9 @@ class SimulatorLauncher {
                     projectName: projectName,
                     projectPath: projectPath
                 )
+                let previewAppIconName = try await MainActor.run {
+                    try self.preparePreviewRunnerAppIcon(appIconURL: appIconURL, projectPath: projectPath)
+                }
 
                 switch target {
                 case .simulator:
@@ -97,6 +104,7 @@ class SimulatorLauncher {
                         projectName: projectName,
                         projectFileURL: projectFileURL,
                         simulatorName: simulatorName,
+                        appIconName: previewAppIconName,
                         onProgress: onProgress,
                         onSuccess: onSuccess,
                         onError: onError
@@ -107,6 +115,7 @@ class SimulatorLauncher {
                         projectName: projectName,
                         projectFileURL: projectFileURL,
                         physicalDeviceID: physicalDeviceID,
+                        appIconName: previewAppIconName,
                         onProgress: onProgress,
                         onSuccess: onSuccess
                     )
@@ -132,6 +141,7 @@ class SimulatorLauncher {
             target: .simulator,
             simulatorName: simulatorName,
             physicalDeviceID: nil,
+            appIconURL: nil,
             onProgress: onProgress,
             onSuccess: onSuccess,
             onError: onError
@@ -174,11 +184,28 @@ class SimulatorLauncher {
         return fileURL
     }
 
+    @MainActor
+    private func preparePreviewRunnerAppIcon(appIconURL: URL?, projectPath: String) throws -> String? {
+        do {
+            if let appIconURL {
+                try AppIconGenerator.installPreviewRunnerIcon(from: appIconURL, projectPath: projectPath)
+                print("[Launcher] Prepared custom PreviewRunner app icon from \(appIconURL.path)")
+                return AppIconGenerator.generatedAppIconName
+            } else {
+                try AppIconGenerator.resetPreviewRunnerIcon(projectPath: projectPath)
+                return nil
+            }
+        } catch {
+            throw LaunchError.appIconFailed(error.localizedDescription)
+        }
+    }
+
     private func launchOnSimulator(
         projectPath: String,
         projectName: String,
         projectFileURL: URL,
         simulatorName: String,
+        appIconName: String?,
         onProgress: @escaping @Sendable (String) -> Void,
         onSuccess: @escaping @Sendable (String) -> Void,
         onError: @escaping @Sendable (String) -> Void
@@ -208,7 +235,8 @@ class SimulatorLauncher {
             sdk: "iphonesimulator",
             destination: nil,
             outputName: "SwiftBuilderPreviewRunnerBuild",
-            projectName: projectName
+            projectName: projectName,
+            appIconName: appIconName
         )
 
         await MainActor.run { onProgress("Installing app on simulator...") }
@@ -227,6 +255,7 @@ class SimulatorLauncher {
         projectName: String,
         projectFileURL: URL,
         physicalDeviceID: String?,
+        appIconName: String?,
         onProgress: @escaping @Sendable (String) -> Void,
         onSuccess: @escaping @Sendable (String) -> Void
     ) async throws {
@@ -244,7 +273,8 @@ class SimulatorLauncher {
             sdk: "iphoneos",
             destination: "id=\(deviceID)",
             outputName: "SwiftBuilderPreviewRunnerDeviceBuild",
-            projectName: projectName
+            projectName: projectName,
+            appIconName: appIconName
         )
 
         await MainActor.run { onProgress("Installing app on iPhone...") }
@@ -739,7 +769,8 @@ class SimulatorLauncher {
         sdk: String,
         destination: String?,
         outputName: String,
-        projectName: String
+        projectName: String,
+        appIconName: String?
     ) async throws -> String {
         try ensureFullXcodeIsAvailable()
 
@@ -749,6 +780,9 @@ class SimulatorLauncher {
         let developerDir = getDeveloperDirectory() ?? "/Applications/Xcode.app/Contents/Developer"
         let xcodebuildPath = findXcodebuildPath()
         let destinationLine = destination.map { "            -destination \"\($0)\" \\\n" } ?? ""
+        let appIconLine = appIconName.map {
+            "            \"ASSETCATALOG_COMPILER_APPICON_NAME=\($0)\" \\\n"
+        } ?? ""
         
         let sanitizedDisplayName = projectName.replacingOccurrences(of: "\"", with: "")
         let scriptPath = (projectPath as NSString).appendingPathComponent("_build_preview.sh")
@@ -767,7 +801,7 @@ class SimulatorLauncher {
             "OBJROOT=$OUTPUT_DIR/Intermediates" \
             "SYMROOT=$OUTPUT_DIR/Products" \
             "INFOPLIST_KEY_CFBundleDisplayName=\(sanitizedDisplayName)" \
-            clean build > "\(logFile)" 2>&1
+        \(appIconLine)            clean build > "\(logFile)" 2>&1
         if [ -d "$OUTPUT_DIR/PreviewRunner.app" ]; then
             exit 0
         else

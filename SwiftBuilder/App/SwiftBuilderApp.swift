@@ -34,6 +34,11 @@ struct BuilderCommands: Commands {
             }
             .keyboardShortcut("e", modifiers: [.command, .shift])
 
+            Button("Upload App Icon\u{2026}") {
+                store?.importAppIcon()
+            }
+            .keyboardShortcut("i", modifiers: [.command, .shift])
+
             Divider()
 
             Button("Run Preview") {
