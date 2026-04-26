@@ -48,10 +48,14 @@ struct BuilderWorkspaceV2: View {
                 selectedPhysicalDeviceID: $store.selectedPhysicalDeviceID,
                 isRefreshingPhysicalDevices: store.isRefreshingPhysicalDevices,
                 physicalDeviceStatusMessage: store.physicalDeviceStatusMessage,
+                appIconName: store.appIconSourceName,
+                appIconImage: store.appIconPreviewImage,
                 onReset: { store.resetCanvas() },
                 onSave: { store.saveProject() },
                 onExportCode: { store.exportCode() },
                 onShowRunGuide: { store.showRunGuide() },
+                onImportAppIcon: { store.importAppIcon() },
+                onRemoveAppIcon: { store.removeAppIcon() },
                 onRefreshPhysicalDevices: { store.refreshPhysicalDevices() },
                 onLaunchPreview: { store.launchPreview() }
             )

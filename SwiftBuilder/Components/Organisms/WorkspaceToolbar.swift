@@ -1,5 +1,8 @@
 import SwiftUI
 import SwiftBuilderComponents
+#if os(macOS)
+import AppKit
+#endif
 
 struct WorkspaceToolbar: View {
     let theme: WorkspaceTheme
@@ -15,11 +18,17 @@ struct WorkspaceToolbar: View {
     @Binding var selectedPhysicalDeviceID: String?
     let isRefreshingPhysicalDevices: Bool
     let physicalDeviceStatusMessage: String?
+    let appIconName: String?
+#if os(macOS)
+    let appIconImage: NSImage?
+#endif
 
     let onReset: () -> Void
     let onSave: () -> Void
     let onExportCode: () -> Void
     let onShowRunGuide: () -> Void
+    let onImportAppIcon: () -> Void
+    let onRemoveAppIcon: () -> Void
     let onRefreshPhysicalDevices: () -> Void
     let onLaunchPreview: () -> Void
 
@@ -46,6 +55,8 @@ struct WorkspaceToolbar: View {
 
     private var leftZone: some View {
         HStack(spacing: Spacing.md) {
+            appIconButton
+
             Text("SwiftBuilder")
                 .font(TypographyPreset.toolbarTitle)
                 .foregroundStyle(
@@ -118,6 +129,15 @@ struct WorkspaceToolbar: View {
     private var rightZone: some View {
         HStack(spacing: Spacing.sm) {
             Menu {
+                Button(action: onImportAppIcon) {
+                    Label(appIconName == nil ? "Upload App Icon" : "Replace App Icon", systemImage: "photo.badge.plus")
+                }
+                if appIconName != nil {
+                    Button(action: onRemoveAppIcon) {
+                        Label("Remove App Icon", systemImage: "trash")
+                    }
+                }
+                Divider()
                 Button(action: onReset) {
                     Label("Reset Canvas", systemImage: "arrow.counterclockwise")
                 }
@@ -179,6 +199,41 @@ struct WorkspaceToolbar: View {
             .disabled(isBuilding || !canRunSelectedTarget)
             .help(runTarget.runButtonHelp)
         }
+    }
+
+    private var appIconButton: some View {
+        Button(action: onImportAppIcon) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(theme.elevatedBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .stroke(theme.outlineStrokeColor, lineWidth: 1)
+                    )
+
+#if os(macOS)
+                if let appIconImage {
+                    Image(nsImage: appIconImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 24, height: 24)
+                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                } else {
+                    Image(systemName: "app.badge")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(theme.brandAccent)
+                }
+#else
+                Image(systemName: "app.badge")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(theme.brandAccent)
+#endif
+            }
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(appIconName.map { "App icon: \($0)" } ?? "Upload App Icon")
     }
 
     private var runTargetControls: some View {

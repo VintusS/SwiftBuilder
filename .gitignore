@@ -17,6 +17,9 @@ SavedProjects/
 # Generated PreviewRunner bundle JSON (copied at build time)
 PreviewRunner/Prototype.json
 
+# Generated PreviewRunner app icon set
+PreviewRunner/Assets.xcassets/SwiftBuilderGeneratedAppIcon.appiconset/
+
 # Temporary build scripts
 _build_preview.sh
 

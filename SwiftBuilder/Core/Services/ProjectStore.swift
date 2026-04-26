@@ -33,6 +33,11 @@ class ProjectStore {
     var selectedPhysicalDeviceID: String?
     var isRefreshingPhysicalDevices = false
     var physicalDeviceStatusMessage: String?
+    var appIconURL: URL?
+    var appIconSourceName: String?
+#if os(macOS)
+    var appIconPreviewImage: NSImage?
+#endif
 
     var undoManager: UndoManager?
     let launcher = SimulatorLauncher()
@@ -328,6 +333,51 @@ class ProjectStore {
 #endif
     }
 
+    @MainActor
+    func importAppIcon() {
+#if os(macOS)
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.image]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.prompt = "Upload"
+        panel.message = "Choose a square app icon image. SwiftBuilder will crop and resize it to 1024px."
+
+        guard panel.runModal() == .OK, let sourceURL = panel.url else { return }
+
+        do {
+            let isSecurityScoped = sourceURL.startAccessingSecurityScopedResource()
+            defer {
+                if isSecurityScoped {
+                    sourceURL.stopAccessingSecurityScopedResource()
+                }
+            }
+
+            let iconDirectory = try ensureAppIconDirectory()
+            let destinationURL = iconDirectory.appendingPathComponent("\(sanitizedProjectBaseName())-AppIcon.png")
+            try AppIconGenerator.writeNormalizedPNG(from: sourceURL, to: destinationURL)
+
+            appIconURL = destinationURL
+            appIconSourceName = sourceURL.lastPathComponent
+            appIconPreviewImage = NSImage(contentsOf: destinationURL)
+        } catch {
+            showAlert(title: "App Icon Upload Failed", message: error.localizedDescription)
+        }
+#else
+        showAlert(title: "Unavailable", message: "App icon upload requires the macOS build.")
+#endif
+    }
+
+    @MainActor
+    func removeAppIcon() {
+        appIconURL = nil
+        appIconSourceName = nil
+#if os(macOS)
+        appIconPreviewImage = nil
+#endif
+    }
+
     func showRunGuide() {
         let saveDir = (getProjectPath() ?? "~") + "/SavedProjects/"
         showAlert(title: "Run Preview", message: """
@@ -395,6 +445,7 @@ Projects are saved to: \(saveDir)
             target: runTarget,
             simulatorName: selectedDevice.displayName,
             physicalDeviceID: selectedPhysicalDeviceID,
+            appIconURL: appIconURL,
             onProgress: { _ in },
             onSuccess: { [weak self] _ in
                 self?.isBuilding = false
@@ -430,13 +481,17 @@ Try building manually:
     }
 
     private func sanitizedProjectFileName() -> String {
+        "\(sanitizedProjectBaseName()).json"
+    }
+
+    private func sanitizedProjectBaseName() -> String {
         let base = projectName.isEmpty ? "Prototype" : projectName
         let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
         let sanitized = base
             .components(separatedBy: allowed.inverted)
             .joined(separator: "-")
             .trimmingCharacters(in: CharacterSet(charactersIn: "-_"))
-        return sanitized.isEmpty ? "Prototype.json" : "\(sanitized).json"
+        return sanitized.isEmpty ? "Prototype" : sanitized
     }
 
     func getProjectPath() -> String? {
@@ -496,6 +551,15 @@ Try building manually:
             try FileManager.default.createDirectory(at: exportDirectory, withIntermediateDirectories: true)
         }
         return exportDirectory
+    }
+
+    private func ensureAppIconDirectory() throws -> URL {
+        let baseDirectory = try ensureExportDirectory()
+        let iconDirectory = baseDirectory.appendingPathComponent("AppIcons", isDirectory: true)
+        if !FileManager.default.fileExists(atPath: iconDirectory.path) {
+            try FileManager.default.createDirectory(at: iconDirectory, withIntermediateDirectories: true)
+        }
+        return iconDirectory
     }
 
     private func mirrorToDocuments(_ fileURL: URL) {
