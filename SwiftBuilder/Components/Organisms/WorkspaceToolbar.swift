@@ -112,8 +112,8 @@ struct WorkspaceToolbar: View {
                 Image(systemName: "minus.magnifyingglass")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
-                Slider(value: $zoomLevel, in: 0.65...1.35)
-                    .frame(width: 80)
+                Slider(value: $zoomLevel, in: PreviewZoom.minimum...PreviewZoom.maximum)
+                    .frame(width: 96)
                     .tint(theme.brandAccent)
                 Image(systemName: "plus.magnifyingglass")
                     .font(.system(size: 11, weight: .medium))
@@ -121,7 +121,7 @@ struct WorkspaceToolbar: View {
                 Text("\(Int(zoomLevel * 100))%")
                     .font(.system(size: 11, weight: .medium).monospacedDigit())
                     .foregroundStyle(.secondary)
-                    .frame(width: 34, alignment: .trailing)
+                    .frame(width: 44, alignment: .trailing)
             }
         }
     }
