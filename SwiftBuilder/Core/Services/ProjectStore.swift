@@ -296,6 +296,53 @@ class ProjectStore {
         )
     }
 
+    @MainActor
+    func loadProject() {
+#if os(macOS)
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.prompt = "Open"
+        panel.message = "Choose a SwiftBuilder project file (.json)"
+
+        if let savedDir = getProjectPath() {
+            panel.directoryURL = URL(fileURLWithPath: savedDir).appendingPathComponent("SavedProjects")
+        }
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        do {
+            let data = try Data(contentsOf: url)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let project = try decoder.decode(BuilderProject.self, from: data)
+
+            let loadedScreens: [Screen]
+            if let exportedScreens = project.screens, !exportedScreens.isEmpty {
+                loadedScreens = exportedScreens.map { Screen(from: $0) }
+            } else {
+                let fallbackScreen = ExportedScreen(id: UUID().uuidString, name: "Screen 1", blocks: project.blocks)
+                loadedScreens = [Screen(from: fallbackScreen)]
+            }
+
+            let before = snapshot()
+            screens = loadedScreens
+            selectedScreenID = loadedScreens.first?.id
+            selectedBlockID = loadedScreens.first?.blocks.first?.id
+            projectName = project.name
+            selectedDevice = DevicePreset(rawValue: project.device) ?? .iphone16Pro
+            appearance = PreviewAppearance(rawValue: project.appearance) ?? .light
+            registerUndo(actionName: "Open Project", before: before)
+        } catch {
+            showAlert(title: "Open Failed", message: error.localizedDescription)
+        }
+#else
+        showAlert(title: "Unavailable", message: "Opening projects requires the macOS build.")
+#endif
+    }
+
     func saveProject() {
         let project = buildProject()
 #if os(macOS)

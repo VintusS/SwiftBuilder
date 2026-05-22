@@ -24,6 +24,11 @@ struct BuilderCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .saveItem) {
+            Button("Open Project\u{2026}") {
+                store?.loadProject()
+            }
+            .keyboardShortcut("o", modifiers: .command)
+
             Button("Save Project") {
                 store?.saveProject()
             }

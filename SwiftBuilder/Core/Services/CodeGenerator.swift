@@ -186,6 +186,13 @@ struct CodeGenerator {
             lines.append("\(pad)    .padding(.vertical, \(Int(block.verticalPadding)))")
             lines.append("\(pad)    .background(RoundedRectangle(cornerRadius: \(Int(block.cornerRadius)), style: .continuous).fill(\(colorLiteral(block.fillColor))))")
 
+        case .secureTextField:
+            lines.append("\(pad)SecureField(\(quoted(block.content)), text: .constant(\"\"))")
+            lines.append("\(pad)    .font(.system(size: \(Int(block.fontSize)), design: .rounded))")
+            lines.append("\(pad)    .padding(.horizontal, \(Int(block.horizontalPadding)))")
+            lines.append("\(pad)    .padding(.vertical, \(Int(block.verticalPadding)))")
+            lines.append("\(pad)    .background(RoundedRectangle(cornerRadius: \(Int(block.cornerRadius)), style: .continuous).fill(\(colorLiteral(block.fillColor))))")
+
         case .toggle:
             let isOn = block.symbolScale >= 0.5
             lines.append("\(pad)Toggle(\(quoted(block.content)), isOn: .constant(\(isOn)))")
